@@ -1,0 +1,3 @@
+node_modules/**
+.DS_Store
+src/bundled_package.json

@@ -1,0 +1,15 @@
+name: Actionforge Runner
+description: GitHub Action for executing an Action Graph.
+inputs:
+  graph_file:
+    description: 'Graph file name in `.github/workflows/graphs` directory.'
+    required: true
+  token:
+    description: Personal access token (PAT)    
+    default: ${{ github.token }}
+  secrets:
+    description: 'Secrets for the Action Graph.'
+    required: false
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
