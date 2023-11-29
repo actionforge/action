@@ -1,0 +1,22 @@
+name: Actionforge Action
+description: GitHub Action for executing an Actionforge Action Graph.
+inputs:
+  graph_file:
+    description: >
+      The name of the graph file located in the `.github/workflows/graphs` directory. 
+      This file defines the Actionforge Action Graph to be executed.
+    required: true
+  token:
+    description: >
+      A Personal Access Token (PAT) used for authentication. 
+      If not provided, the default GitHub token for the repository will be used.
+
+      [Learn more about creating and using
+      encrypted secrets](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/creating-and-using-encrypted-secrets)
+    default: ${{ github.token }}
+branding:
+  icon: 'check'
+  color: 'green'
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
