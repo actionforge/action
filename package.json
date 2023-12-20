@@ -1,0 +1,40 @@
+{
+  "name": "action",
+  "version": "0.4.35",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc && ncc build src/main.ts -o dist",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "github",
+    "actions",
+    "workflows",
+    "node",
+    "graph"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/actionforge/action.git"
+  },
+  "author": "Actionforge",
+  "license": "Actionforge Community License",
+  "bugs": {
+    "url": "https://github.com/actionforge/action/issues"
+  },
+  "homepage": "https://github.com/actionforge/action#readme",
+  "dependencies": {
+    "@actions/core": "^1.10.1",
+    "@actions/github": "^6.0.0",
+    "@actions/tool-cache": "^2.0.1",
+    "@octokit/action": "^6.0.6",
+    "@types/node": "^20.9.0",
+    "got": "^13.0.0"
+  },
+  "devDependencies": {
+    "@types/got": "^9.6.12",
+    "@vercel/ncc": "^0.38.1",
+    "typescript": "^5.2.2"
+  }
+}
