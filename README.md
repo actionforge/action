@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD041 -->
 ![Actionforge Banner](https://www.actionforge.dev/assets/social.jpg?)
 
 # Actionforge Action
@@ -6,10 +7,10 @@ Welcome to the Actionforge Action source code!
 
 Actionforge introduces Action Graphs, a faster and easier way to create and execute GitHub workflows. This new approach replaces tedious YAML file editing by hand with a user-friendly graph editor. Action Graphs are compatible with GitHub Actions. The core product consists out of 4 components:
 
-- ♾️ [VS Code Extension](https://www.github.com/actionforge/vscode-ext) (to be made public) - Extension to modify Action Graphs within VS Code.
+- ♾️ [VS Code Extension](https://www.github.com/actionforge/vscode-ext) - Extension to modify Action Graphs within VS Code.
 - 🟢 [GitHub Action](https://www.github.com/actionforge/action) - GitHub Action that reads the Action Graph and starts the Graph Runner with it.
-- 🏃‍♀️ [Graph Runner](https://www.github.com/actionforge/graph-runner) (to be made public) - The cli program that executes an Action Graph.
-- 🕸️ [Graph Editor](https://www.github.com/actionforge/graph-editor) (to be made public) - Visual graph editor to create and build Action Graphs. These graphs will be committed to your repository.
+- 🏃‍♀️ [Graph Runner](https://www.github.com/actionforge/graph-runner) - The cli program that executes an Action Graph.
+- 🕸️ [Graph Editor](https://www.github.com/actionforge/graph-editor) - Visual graph editor to create and build Action Graphs. These graphs will be committed to your repository.
 
 For a full introduction check out the [Actionforge Documentation](https://www.actionforge.dev/docs).
 
@@ -17,7 +18,7 @@ For a full introduction check out the [Actionforge Documentation](https://www.ac
 
 <!-- start usage -->
 ```yaml
-- uses: actionforge/action@v0.4.35
+- uses: .
   with:
     # The name of the graph file located in the `.github/workflows/graphs` directory.
     # This file defines the Actionforge Action Graph to be executed.
