@@ -1,0 +1,58 @@
+entry: gh-start
+executions:
+  - src:
+      node: gh-start
+      port: exec-on-push
+    dst:
+      node: github-com-actions-checkout-coconut-coconut-banana
+      port: exec
+  - src:
+      node: github-com-actions-checkout-coconut-coconut-banana
+      port: exec
+    dst:
+      node: github-com-actions-setup-node-cherry-grape-banana
+      port: exec
+  - src:
+      node: github-com-actions-setup-node-cherry-grape-banana
+      port: exec
+    dst:
+      node: run-v1-strawberry-cat-blueberry
+      port: exec
+connections: []
+nodes:
+  - id: gh-start
+    type: gh-start@v1
+    position:
+      x: 100
+      y: 100
+    settings:
+      folded: false
+  - id: github-com-actions-checkout-coconut-coconut-banana
+    type: github.com/actions/checkout
+    position:
+      x: 670
+      y: 230
+    settings:
+      folded: false
+  - id: github-com-actions-setup-node-cherry-grape-banana
+    type: github.com/actions/setup-node
+    position:
+      x: 1300
+      y: 360
+    inputs:
+      node-version: v20.10.0
+    settings:
+      folded: false
+  - id: run-v1-strawberry-cat-blueberry
+    type: run@v1
+    position:
+      x: 1810
+      y: 450
+    inputs:
+      script: |-
+        npm install
+        npm run lint
+    settings:
+      folded: false
+registries: []
+description: ''
