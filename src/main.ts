@@ -128,7 +128,7 @@ async function run(): Promise<void> {
   console.log(`${delimiter}`);
 
   const runnerPath = await downloadRunner(downloadInfo);
-  executeRunner(runnerPath, graphFile);
+  return executeRunner(runnerPath, graphFile);
 }
 
 async function main(): Promise<void> {
@@ -140,4 +140,4 @@ async function main(): Promise<void> {
   }
 }
 
-main();
+void main();
