@@ -37835,7 +37835,7 @@ function executeRunner(runnerPath, graphFile) {
         const buf = Buffer.from(data.content, "base64");
         fs_1.default.writeFileSync(graphFile, buf.toString("utf-8"));
         const customEnv = Object.assign(Object.assign({}, process.env), { GRAPH_FILE: graphFile });
-        child_process_1.default.execSync(runnerPath, { stdio: "inherit", env: customEnv });
+        child_process_1.default.execSync(`${runnerPath} run`, { stdio: "inherit", env: customEnv });
     });
 }
 /**
@@ -37844,11 +37844,10 @@ function executeRunner(runnerPath, graphFile) {
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const baseUrl = `https://github.com/actionforge/${bundled_package_json_1.default.name}/releases/download`;
-        const downloadUrl = `${baseUrl}/v${bundled_package_json_1.default.version}/graph-runner-${os_1.default.platform()}-${os_1.default.arch()}-${bundled_package_json_1.default.version}.tar.gz`;
+        const downloadUrl = `${baseUrl}/v${bundled_package_json_1.default.version}/graph-runner-${os_1.default.platform()}-${os_1.default.arch()}.tar.gz`;
         console.log("Downloading runner from", downloadUrl);
         const downloadInfo = {
             downloadUrl: downloadUrl,
-            resolvedVersion: bundled_package_json_1.default.version,
             filename: 'graph-runner',
         };
         const GRAPH_FILE_DIR = ".github/workflows/graphs";
@@ -37864,7 +37863,7 @@ function run() {
         console.log(output);
         console.log(`${delimiter}`);
         const runnerPath = yield downloadRunner(downloadInfo);
-        executeRunner(runnerPath, graphFile);
+        return executeRunner(runnerPath, graphFile);
     });
 }
 function main() {
@@ -37879,7 +37878,7 @@ function main() {
         }
     });
 }
-main();
+void main();
 
 
 /***/ }),
@@ -44014,7 +44013,7 @@ const got = source_create(defaults);
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse('{"name":"action","version":"0.4.35"}');
+module.exports = JSON.parse('{"name":"action","version":"0.8.20"}');
 
 /***/ })
 

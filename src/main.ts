@@ -17,7 +17,6 @@ import pj from './bundled_package.json';
  */
 export interface IRunnerVersionInfo {
   downloadUrl: string;
-  resolvedVersion: string;
   filename: string;
 }
 
@@ -93,7 +92,7 @@ async function executeRunner(
   fs.writeFileSync(graphFile, buf.toString("utf-8"));
 
   const customEnv = { ...process.env, GRAPH_FILE: graphFile };
-  cp.execSync(runnerPath, { stdio: "inherit", env: customEnv });
+  cp.execSync(`${runnerPath} run`, { stdio: "inherit", env: customEnv });
 }
 
 /**
@@ -101,12 +100,11 @@ async function executeRunner(
  */
 async function run(): Promise<void> {
   const baseUrl = `https://github.com/actionforge/${pj.name}/releases/download`;
-  const downloadUrl = `${baseUrl}/v${pj.version}/graph-runner-${os.platform()}-${os.arch()}-${pj.version}.tar.gz`;
+  const downloadUrl = `${baseUrl}/v${pj.version}/graph-runner-${os.platform()}-${os.arch()}.tar.gz`;
   console.log("Downloading runner from", downloadUrl);
 
   const downloadInfo = {
     downloadUrl: downloadUrl,
-    resolvedVersion: pj.version,
     filename: 'graph-runner',
   };
 

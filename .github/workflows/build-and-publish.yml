@@ -3,9 +3,9 @@ on: [push]
 jobs:
     build-and-publish:
       runs-on: ubuntu-latest
-      name: My workflow
+      name: Execute action graph
       steps:
-        - name: Execute Action Graph
+        - name: Execute action graph
           uses: actionforge/action@v0.4.35
           with:
             graph_file: build-and-publish.yml
