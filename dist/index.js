@@ -44013,7 +44013,7 @@ const got = source_create(defaults);
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse('{"name":"action","version":"0.8.20"}');
+module.exports = JSON.parse('{"name":"action","version":"0.8.25"}');
 
 /***/ })
 

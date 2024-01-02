@@ -1,6 +1,6 @@
 {
   "name": "action",
-  "version": "0.8.20",
+  "version": "0.8.25",
   "description": "",
   "main": "dist/index.js",
   "scripts": {
