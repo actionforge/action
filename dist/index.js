@@ -37853,11 +37853,10 @@ function run() {
         const GRAPH_FILE_DIR = ".github/workflows/graphs";
         const graphFile = path_1.default.join(GRAPH_FILE_DIR, core.getInput("graph_file", { required: true }));
         // Log output
-        const refName = process.env.GITHUB_REF_NAME;
         const sha = process.env.GITHUB_SHA;
         const repo = process.env.GITHUB_REPOSITORY;
         const runId = process.env.GITHUB_RUN_ID;
-        const output = `🟢 View Action Graph: https://www.actionforge.dev/github/${repo}/${refName !== null && refName !== void 0 ? refName : sha}/${graphFile}?run_id=${runId}`;
+        const output = `🟢 View Action Graph: https://www.actionforge.dev/github/${repo}/${sha}/${graphFile}?run_id=${runId}`;
         const delimiter = '-'.repeat(32);
         console.log(`${delimiter}`);
         console.log(output);

@@ -115,11 +115,10 @@ async function run(): Promise<void> {
   );
 
   // Log output
-  const refName = process.env.GITHUB_REF_NAME;
   const sha = process.env.GITHUB_SHA;
   const repo = process.env.GITHUB_REPOSITORY;
   const runId = process.env.GITHUB_RUN_ID;
-  const output = `🟢 View Action Graph: https://www.actionforge.dev/github/${repo}/${refName ?? sha}/${graphFile}?run_id=${runId}`;
+  const output = `🟢 View Action Graph: https://www.actionforge.dev/github/${repo}/${sha}/${graphFile}?run_id=${runId}`;
   const delimiter = '-'.repeat(32);
   console.log(`${delimiter}`);
   console.log(output);
