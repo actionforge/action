@@ -1,7 +1,15 @@
-<!-- markdownlint-disable MD041 -->
+<!-- markdownlint-disable MD041 MD033 -->
 ![Actionforge Banner](https://www.actionforge.dev/assets/social.jpg?)
 
 # Actionforge Action
+
+<div align="center" width="100%">
+
+[![view-action-graph](https://img.shields.io/github/actions/workflow/status/actionforge/action/build-and-publish.yml?label=View%20Action%20Graph)](https://www.actionforge.dev/github/actionforge/action/main/.github/workflows/graphs/build-and-publish.yml)
+[![made-with-ts](https://img.shields.io/badge/Made%20with-TS-3178C6.svg)](https://www.typescriptlang.org/)
+[![License](https://img.shields.io/badge/License-ACL-blue?color=orange)](https://www.github.com/actionforge/legal/blob/main/LICENSE.md)
+
+</div>
 
 Welcome to the Actionforge Action source code!
 
