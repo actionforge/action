@@ -37760,11 +37760,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.extractArchive = void 0;
+exports.calculateFileHash = exports.extractArchive = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const stream = __importStar(__nccwpck_require__(2781));
 const util = __importStar(__nccwpck_require__(3837));
+const crypto = __importStar(__nccwpck_require__(6113));
 const tc = __importStar(__nccwpck_require__(7784));
 const os_1 = __importDefault(__nccwpck_require__(2037));
 const path_1 = __importDefault(__nccwpck_require__(1017));
@@ -37787,6 +37788,23 @@ function extractArchive(archivePath) {
     });
 }
 exports.extractArchive = extractArchive;
+/**
+ * Calculates the SHA256 hash of a file.
+ * @param filePath The path to the file.
+ * @returns A Promise that resolves to the hash.
+ */
+function calculateFileHash(filePath) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return new Promise((resolve, reject) => {
+            const hash = crypto.createHash('sha256');
+            const s = fs_1.default.createReadStream(filePath);
+            s.on('data', (data) => hash.update(data));
+            s.on('end', () => resolve(hash.digest('hex')));
+            s.on('error', (err) => reject(err));
+        });
+    });
+}
+exports.calculateFileHash = calculateFileHash;
 /**
  * Downloads the specified runner version and returns the path to the executable.
  * @param info - The runner version information.
@@ -37812,6 +37830,9 @@ function downloadRunner(info) {
         const extPath = yield extractArchive(filename);
         const execPath = path_1.default.join(extPath, info.filename);
         fs_1.default.chmodSync(execPath, 0o755);
+        // calculate hash of execPath
+        const hash = yield calculateFileHash(execPath);
+        console.log(`Runner hash: ${hash}`);
         return execPath;
     });
 }

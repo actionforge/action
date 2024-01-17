@@ -2,6 +2,7 @@ import * as core from "@actions/core";
 import * as github from "@actions/github";
 import * as stream from "stream";
 import * as util from "util";
+import * as crypto from "crypto";
 import * as tc from "@actions/tool-cache";
 
 import os from "os";
@@ -34,6 +35,22 @@ export async function extractArchive(archivePath: string): Promise<string> {
 }
 
 /**
+ * Calculates the SHA256 hash of a file.
+ * @param filePath The path to the file.
+ * @returns A Promise that resolves to the hash.
+ */
+export async function calculateFileHash(filePath: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash('sha256');
+    const s = fs.createReadStream(filePath);
+
+    s.on('data', (data) => hash.update(data));
+    s.on('end', () => resolve(hash.digest('hex')));
+    s.on('error', (err) => reject(err));
+  });
+}
+
+/**
  * Downloads the specified runner version and returns the path to the executable.
  * @param info - The runner version information.
  * @returns The path to the executable.
@@ -63,6 +80,10 @@ async function downloadRunner(info: IRunnerVersionInfo): Promise<string> {
   const extPath = await extractArchive(filename);
   const execPath = path.join(extPath, info.filename);
   fs.chmodSync(execPath, 0o755);
+
+  // calculate hash of execPath
+  const hash = await calculateFileHash(execPath);
+  console.log(`Runner hash: ${hash}`);
 
   return execPath;
 }
