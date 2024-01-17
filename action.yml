@@ -1,4 +1,4 @@
-name: Actionforge Action
+name: Actionforge
 description: GitHub Action for executing an Actionforge Action Graph.
 inputs:
   graph_file:
