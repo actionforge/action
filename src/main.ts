@@ -2,14 +2,23 @@ import * as core from "@actions/core";
 import * as github from "@actions/github";
 import * as stream from "stream";
 import * as util from "util";
+import * as crypto from "crypto";
 import * as tc from "@actions/tool-cache";
+import * as pjdata from './bundled_package.json';
 
 import os from "os";
 import path from "path";
 import fs from "fs";
 import got from "got";
 import cp from "child_process";
-import pj from './bundled_package.json';
+
+const pj: BundledPackage = pjdata as unknown as BundledPackage;
+
+type BundledPackage = {
+  name: string;
+  version: string;
+  binaries: Record<NodeJS.Platform, string>;
+};
 
 /**
  * Represents information about a runner version,
@@ -31,6 +40,22 @@ export async function extractArchive(archivePath: string): Promise<string> {
     // Windows requires the .zip extension for extraction
     ? tc.extractZip(archivePath + '.zip')
     : tc.extractTar(archivePath);
+}
+
+/**
+ * Calculates the SHA256 hash of a file.
+ * @param filePath The path to the file.
+ * @returns A Promise that resolves to the hash.
+ */
+export async function calculateFileHash(filePath: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const hash = crypto.createHash('sha256');
+    const s = fs.createReadStream(filePath);
+
+    s.on('data', (data) => hash.update(data));
+    s.on('end', () => resolve(hash.digest('hex')));
+    s.on('error', (err) => reject(err));
+  });
 }
 
 /**
@@ -63,6 +88,11 @@ async function downloadRunner(info: IRunnerVersionInfo): Promise<string> {
   const extPath = await extractArchive(filename);
   const execPath = path.join(extPath, info.filename);
   fs.chmodSync(execPath, 0o755);
+
+  const hash = await calculateFileHash(execPath);
+  if (hash.length !== 64 || hash !== pj.binaries[os.platform()]) {
+    throw new Error(`Hash mismatch for ${execPath}`);
+  }
 
   return execPath;
 }

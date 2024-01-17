@@ -37760,18 +37760,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.extractArchive = void 0;
+exports.calculateFileHash = exports.extractArchive = void 0;
 const core = __importStar(__nccwpck_require__(2186));
 const github = __importStar(__nccwpck_require__(5438));
 const stream = __importStar(__nccwpck_require__(2781));
 const util = __importStar(__nccwpck_require__(3837));
+const crypto = __importStar(__nccwpck_require__(6113));
 const tc = __importStar(__nccwpck_require__(7784));
+const pjdata = __importStar(__nccwpck_require__(6055));
 const os_1 = __importDefault(__nccwpck_require__(2037));
 const path_1 = __importDefault(__nccwpck_require__(1017));
 const fs_1 = __importDefault(__nccwpck_require__(7147));
 const got_1 = __importDefault(__nccwpck_require__(137));
 const child_process_1 = __importDefault(__nccwpck_require__(2081));
-const bundled_package_json_1 = __importDefault(__nccwpck_require__(6055));
+const pj = pjdata;
 /**
  * Extracts the contents of an archive file to a directory.
  * @param archivePath The path to the archive file.
@@ -37787,6 +37789,23 @@ function extractArchive(archivePath) {
     });
 }
 exports.extractArchive = extractArchive;
+/**
+ * Calculates the SHA256 hash of a file.
+ * @param filePath The path to the file.
+ * @returns A Promise that resolves to the hash.
+ */
+function calculateFileHash(filePath) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return new Promise((resolve, reject) => {
+            const hash = crypto.createHash('sha256');
+            const s = fs_1.default.createReadStream(filePath);
+            s.on('data', (data) => hash.update(data));
+            s.on('end', () => resolve(hash.digest('hex')));
+            s.on('error', (err) => reject(err));
+        });
+    });
+}
+exports.calculateFileHash = calculateFileHash;
 /**
  * Downloads the specified runner version and returns the path to the executable.
  * @param info - The runner version information.
@@ -37812,6 +37831,10 @@ function downloadRunner(info) {
         const extPath = yield extractArchive(filename);
         const execPath = path_1.default.join(extPath, info.filename);
         fs_1.default.chmodSync(execPath, 0o755);
+        const hash = yield calculateFileHash(execPath);
+        if (hash.length !== 64 || hash !== pj.binaries[os_1.default.platform()]) {
+            throw new Error(`Hash mismatch for ${execPath}`);
+        }
         return execPath;
     });
 }
@@ -37843,8 +37866,8 @@ function executeRunner(runnerPath, graphFile) {
  */
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
-        const baseUrl = `https://github.com/actionforge/${bundled_package_json_1.default.name}/releases/download`;
-        const downloadUrl = `${baseUrl}/v${bundled_package_json_1.default.version}/graph-runner-${os_1.default.platform()}-${os_1.default.arch()}.tar.gz`;
+        const baseUrl = `https://github.com/actionforge/${pj.name}/releases/download`;
+        const downloadUrl = `${baseUrl}/v${pj.version}/graph-runner-${os_1.default.platform()}-${os_1.default.arch()}.tar.gz`;
         console.log("Downloading runner from", downloadUrl);
         const downloadInfo = {
             downloadUrl: downloadUrl,
@@ -44012,7 +44035,7 @@ const got = source_create(defaults);
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse('{"name":"action","version":"0.8.31"}');
+module.exports = JSON.parse('{"name":"action","version":"0.8.31","binaries":{"linux":"dc365e3bf8bef9b0705babc78ee9eebf7ac6fd581a4d9aa3e3f4d3798aa0cc1c"}}');
 
 /***/ })
 
