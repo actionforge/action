@@ -37767,12 +37767,13 @@ const stream = __importStar(__nccwpck_require__(2781));
 const util = __importStar(__nccwpck_require__(3837));
 const crypto = __importStar(__nccwpck_require__(6113));
 const tc = __importStar(__nccwpck_require__(7784));
+const pjdata = __importStar(__nccwpck_require__(6055));
 const os_1 = __importDefault(__nccwpck_require__(2037));
 const path_1 = __importDefault(__nccwpck_require__(1017));
 const fs_1 = __importDefault(__nccwpck_require__(7147));
 const got_1 = __importDefault(__nccwpck_require__(137));
 const child_process_1 = __importDefault(__nccwpck_require__(2081));
-const bundled_package_json_1 = __importDefault(__nccwpck_require__(6055));
+const pj = pjdata;
 /**
  * Extracts the contents of an archive file to a directory.
  * @param archivePath The path to the archive file.
@@ -37830,9 +37831,10 @@ function downloadRunner(info) {
         const extPath = yield extractArchive(filename);
         const execPath = path_1.default.join(extPath, info.filename);
         fs_1.default.chmodSync(execPath, 0o755);
-        // calculate hash of execPath
         const hash = yield calculateFileHash(execPath);
-        console.log(`Runner hash: ${hash}`);
+        if (hash.length !== 64 || hash !== pj.binaries[os_1.default.platform()]) {
+            throw new Error(`Hash mismatch for ${execPath}`);
+        }
         return execPath;
     });
 }
@@ -37864,8 +37866,8 @@ function executeRunner(runnerPath, graphFile) {
  */
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
-        const baseUrl = `https://github.com/actionforge/${bundled_package_json_1.default.name}/releases/download`;
-        const downloadUrl = `${baseUrl}/v${bundled_package_json_1.default.version}/graph-runner-${os_1.default.platform()}-${os_1.default.arch()}.tar.gz`;
+        const baseUrl = `https://github.com/actionforge/${pj.name}/releases/download`;
+        const downloadUrl = `${baseUrl}/v${pj.version}/graph-runner-${os_1.default.platform()}-${os_1.default.arch()}.tar.gz`;
         console.log("Downloading runner from", downloadUrl);
         const downloadInfo = {
             downloadUrl: downloadUrl,
@@ -44033,7 +44035,7 @@ const got = source_create(defaults);
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse('{"name":"action","version":"0.8.31"}');
+module.exports = JSON.parse('{"name":"action","version":"0.8.31","binaries":{"linux":"dc365e3bf8bef9b0705babc78ee9eebf7ac6fd581a4d9aa3e3f4d3798aa0cc1c"}}');
 
 /***/ })
 

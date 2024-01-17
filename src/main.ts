@@ -4,13 +4,21 @@ import * as stream from "stream";
 import * as util from "util";
 import * as crypto from "crypto";
 import * as tc from "@actions/tool-cache";
+import * as pjdata from './bundled_package.json';
 
 import os from "os";
 import path from "path";
 import fs from "fs";
 import got from "got";
 import cp from "child_process";
-import pj from './bundled_package.json';
+
+const pj: BundledPackage = pjdata as unknown as BundledPackage;
+
+type BundledPackage = {
+  name: string;
+  version: string;
+  binaries: Record<NodeJS.Platform, string>;
+};
 
 /**
  * Represents information about a runner version,
@@ -81,9 +89,10 @@ async function downloadRunner(info: IRunnerVersionInfo): Promise<string> {
   const execPath = path.join(extPath, info.filename);
   fs.chmodSync(execPath, 0o755);
 
-  // calculate hash of execPath
   const hash = await calculateFileHash(execPath);
-  console.log(`Runner hash: ${hash}`);
+  if (hash.length !== 64 || hash !== pj.binaries[os.platform()]) {
+    throw new Error(`Hash mismatch for ${execPath}`);
+  }
 
   return execPath;
 }
