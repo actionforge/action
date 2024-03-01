@@ -37811,29 +37811,25 @@ exports.calculateFileHash = calculateFileHash;
  * @param info - The runner version information.
  * @returns The path to the executable.
  */
-function downloadRunner(info) {
+function downloadRunner(info, token, hashCheck) {
     return __awaiter(this, void 0, void 0, function* () {
-        const token = core.getInput("token");
-        if (!token) {
-            throw new Error(`No GitHub token found`);
-        }
         const tempDir = process.env.RUNNER_TEMP || '.';
         const filename = path_1.default.join(tempDir, info.filename);
         const pipeline = util.promisify(stream.pipeline);
         yield pipeline(got_1.default.stream(info.downloadUrl, {
             method: "GET",
-            headers: {
-                "User-Agent": "GitHub Actions",
-                Accept: "application/octet-stream",
-                Authorization: `token ${token}`,
-            },
+            headers: Object.assign({ "Accept": "application/octet-stream", "User-Agent": "GitHub Actions" }, (token ? {
+                "Authorization": `token ${token}`
+            } : {})),
         }), fs_1.default.createWriteStream(filename));
         const extPath = yield extractArchive(filename);
         const execPath = path_1.default.join(extPath, info.filename);
         fs_1.default.chmodSync(execPath, 0o755);
-        const hash = yield calculateFileHash(execPath);
-        if (hash.length !== 64 || hash !== pj.binaries[os_1.default.platform()]) {
-            throw new Error(`Hash mismatch for ${execPath}`);
+        if (hashCheck) {
+            const hash = yield calculateFileHash(execPath);
+            if (hash.length !== 64 || hash !== pj.binaries[os_1.default.platform()]) {
+                throw new Error(`Hash mismatch for ${execPath}`);
+            }
         }
         return execPath;
     });
@@ -37844,7 +37840,7 @@ function downloadRunner(info) {
  * @param graphFile The path to the graph file.
  * @returns A Promise that resolves when the runner has finished executing.
  */
-function executeRunner(runnerPath, graphFile) {
+function executeRunner(runnerPath, graphFile, inputs, matrix) {
     return __awaiter(this, void 0, void 0, function* () {
         const token = core.getInput("token");
         const octokit = github.getOctokit(token);
@@ -37857,18 +37853,39 @@ function executeRunner(runnerPath, graphFile) {
         fs_1.default.mkdirSync(path_1.default.dirname(graphFile), { recursive: true });
         const buf = Buffer.from(data.content, "base64");
         fs_1.default.writeFileSync(graphFile, buf.toString("utf-8"));
-        const customEnv = Object.assign(Object.assign({}, process.env), { GRAPH_FILE: graphFile });
+        const customEnv = Object.assign(Object.assign({}, process.env), { GRAPH_FILE: graphFile, INPUT_MATRIX: matrix, INPUT_INPUTS: inputs });
+        console.log(`🟢 Running graph-runner`, graphFile);
         child_process_1.default.execSync(`${runnerPath} run`, { stdio: "inherit", env: customEnv });
     });
+}
+/**
+ * Asserts that the given object is an empty or non-empty string.
+ */
+function assertValidString(o) {
+    if (o === null || o === undefined || o === "" || o === "null" || o === "{}") {
+        return "";
+    }
+    else {
+        return o;
+    }
 }
 /**
  * The main function that downloads and installs the runner.
  */
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
-        const baseUrl = `https://github.com/actionforge/${pj.name}/releases/download`;
-        const downloadUrl = `${baseUrl}/v${pj.version}/graph-runner-${os_1.default.platform()}-${os_1.default.arch()}.tar.gz`;
-        console.log("Downloading runner from", downloadUrl);
+        const runnerBaseUrl = core.getInput("runner_base_url", { trimWhitespace: true });
+        const inputs = assertValidString(core.getInput("inputs"));
+        const matrix = assertValidString(core.getInput("matrix"));
+        const token = core.getInput("token");
+        if (!token) {
+            throw new Error(`No GitHub token found`);
+        }
+        const baseUrl = `https://github.com/actionforge/${pj.name}/releases/download/v${pj.version}`;
+        const downloadUrl = `${runnerBaseUrl.replace(/\/$/, "") || baseUrl}/graph-runner-${os_1.default.platform()}-${os_1.default.arch()}.tar.gz`;
+        if (runnerBaseUrl) {
+            console.log("\u27a1 Custom runner URL set:", downloadUrl);
+        }
         const downloadInfo = {
             downloadUrl: downloadUrl,
             filename: 'graph-runner',
@@ -37884,8 +37901,8 @@ function run() {
         console.log(`${delimiter}`);
         console.log(output);
         console.log(`${delimiter}`);
-        const runnerPath = yield downloadRunner(downloadInfo);
-        return executeRunner(runnerPath, graphFile);
+        const runnerPath = yield downloadRunner(downloadInfo, runnerBaseUrl ? null : token, runnerBaseUrl ? false : true);
+        return executeRunner(runnerPath, graphFile, inputs, matrix);
     });
 }
 function main() {

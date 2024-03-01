@@ -14,6 +14,21 @@ inputs:
       [Learn more about creating and using
       encrypted secrets](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/creating-and-using-encrypted-secrets)
     default: ${{ github.token }}
+  inputs:
+    description: >
+      A JSON string containing the inputs to be passed to the Actionforge action graph.
+    required: false
+    default: '{}'
+  matrix:
+    description: >
+      A JSON string containing the matrix to be passed to the Actionforge action graph.
+    required: false
+    default: '{}'
+  runner_base_url:
+    description: >
+      Custom runner URL to use for the Actionforge action graph.
+    required: false
+    default: ''
 branding:
   icon: 'check'
   color: 'green'
