@@ -157,7 +157,8 @@ async function executeRunner(
     INPUT_INPUTS: inputs,
   };
   console.log(`🟢 Running graph-runner`, graphFile);
-  cp.execSync(`${runnerPath} run`, { stdio: "inherit", env: customEnv });
+  DebugOutput(`Executing runner: ${runnerPath} with graph file: ${graphFile}`);
+  cp.execSync(`${runnerPath}`, { stdio: "inherit", env: customEnv });
 }
 
 /**
@@ -212,6 +213,7 @@ async function run(): Promise<void> {
   console.log(`${delimiter}`);
 
   const runnerPath = await downloadRunner(downloadInfo, runnerBaseUrl ? null : token, runnerBaseUrl ? false : true);
+  DebugOutput(`Runner downloaded to: ${runnerPath}`);
   return executeRunner(runnerPath, graphFile, inputs, matrix);
 }
 

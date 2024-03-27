@@ -37876,7 +37876,8 @@ function executeRunner(runnerPath, graphFile, inputs, matrix) {
         fs_1.default.writeFileSync(graphFile, buf.toString("utf-8"));
         const customEnv = Object.assign(Object.assign({}, process.env), { GRAPH_FILE: graphFile, INPUT_MATRIX: matrix, INPUT_INPUTS: inputs });
         console.log(`🟢 Running graph-runner`, graphFile);
-        child_process_1.default.execSync(`${runnerPath} run`, { stdio: "inherit", env: customEnv });
+        DebugOutput(`Executing runner: ${runnerPath} with graph file: ${graphFile}`);
+        child_process_1.default.execSync(`${runnerPath}`, { stdio: "inherit", env: customEnv });
     });
 }
 /**
@@ -37923,6 +37924,7 @@ function run() {
         console.log(output);
         console.log(`${delimiter}`);
         const runnerPath = yield downloadRunner(downloadInfo, runnerBaseUrl ? null : token, runnerBaseUrl ? false : true);
+        DebugOutput(`Runner downloaded to: ${runnerPath}`);
         return executeRunner(runnerPath, graphFile, inputs, matrix);
     });
 }
