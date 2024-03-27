@@ -63,12 +63,7 @@ export async function calculateFileHash(filePath: string): Promise<string> {
  * @param info - The runner version information.
  * @returns The path to the executable.
  */
-async function downloadRunner(info: IRunnerVersionInfo): Promise<string> {
-  const token = core.getInput("token");
-  if (!token) {
-      throw new Error(`No GitHub token found`)
-  }
-
+async function downloadRunner(info: IRunnerVersionInfo, token: string | null, hashCheck: boolean): Promise<string> {
   const tempDir = process.env.RUNNER_TEMP || '.';
   const filename = path.join(tempDir, info.filename);
 
@@ -77,9 +72,11 @@ async function downloadRunner(info: IRunnerVersionInfo): Promise<string> {
     got.stream(info.downloadUrl, {
       method: "GET",
       headers: {
+        "Accept": "application/octet-stream",
         "User-Agent": "GitHub Actions",
-        Accept: "application/octet-stream",
-        Authorization: `token ${token}`,
+        ...(token ? {
+          "Authorization": `token ${token}` } : {}
+          ),
       },
     }),
     fs.createWriteStream(filename)
@@ -89,9 +86,11 @@ async function downloadRunner(info: IRunnerVersionInfo): Promise<string> {
   const execPath = path.join(extPath, info.filename);
   fs.chmodSync(execPath, 0o755);
 
-  const hash = await calculateFileHash(execPath);
-  if (hash.length !== 64 || hash !== pj.binaries[os.platform()]) {
-    throw new Error(`Hash mismatch for ${execPath}`);
+  if (hashCheck) {
+    const hash = await calculateFileHash(execPath);
+    if (hash.length !== 64 || hash !== pj.binaries[os.platform()]) {
+      throw new Error(`Hash mismatch for ${execPath}`);
+    }
   }
 
   return execPath;
@@ -106,6 +105,8 @@ async function downloadRunner(info: IRunnerVersionInfo): Promise<string> {
 async function executeRunner(
   runnerPath: string,
   graphFile: string,
+  inputs: string,
+  matrix: string,
 ): Promise<void> {
   const token = core.getInput("token");
 
@@ -121,17 +122,45 @@ async function executeRunner(
   const buf = Buffer.from((data as { content: string }).content, "base64");
   fs.writeFileSync(graphFile, buf.toString("utf-8"));
 
-  const customEnv = { ...process.env, GRAPH_FILE: graphFile };
+  const customEnv = {
+    ...process.env,
+    GRAPH_FILE: graphFile,
+    INPUT_MATRIX: matrix,
+    INPUT_INPUTS: inputs,
+  };
+  console.log(`🟢 Running graph-runner`, graphFile);
   cp.execSync(`${runnerPath} run`, { stdio: "inherit", env: customEnv });
+}
+
+/**
+ * Asserts that the given object is an empty or non-empty string.
+ */
+function assertValidString(o?: string | null): string {
+  if (o === null || o === undefined || o === "" || o === "null" || o === "{}") {
+    return "";
+  } else { 
+    return o;
+  }
 }
 
 /**
  * The main function that downloads and installs the runner.
  */
 async function run(): Promise<void> {
-  const baseUrl = `https://github.com/actionforge/${pj.name}/releases/download`;
-  const downloadUrl = `${baseUrl}/v${pj.version}/graph-runner-${os.platform()}-${os.arch()}.tar.gz`;
-  console.log("Downloading runner from", downloadUrl);
+  const runnerBaseUrl: string = core.getInput("runner_base_url", { trimWhitespace: true });
+  const inputs: string = assertValidString(core.getInput("inputs"));
+  const matrix: string = assertValidString(core.getInput("matrix"));
+
+  const token = core.getInput("token");
+  if (!token) {
+      throw new Error(`No GitHub token found`)
+  }
+
+  const baseUrl = `https://github.com/actionforge/${pj.name}/releases/download/v${pj.version}`;
+  const downloadUrl = `${runnerBaseUrl.replace(/\/$/, "") || baseUrl}/graph-runner-${os.platform()}-${os.arch()}.tar.gz`;
+  if (runnerBaseUrl) {
+    console.log("\u27a1 Custom runner URL set:", downloadUrl);
+  }
 
   const downloadInfo = {
     downloadUrl: downloadUrl,
@@ -154,8 +183,8 @@ async function run(): Promise<void> {
   console.log(output);
   console.log(`${delimiter}`);
 
-  const runnerPath = await downloadRunner(downloadInfo);
-  return executeRunner(runnerPath, graphFile);
+  const runnerPath = await downloadRunner(downloadInfo, runnerBaseUrl ? null : token, runnerBaseUrl ? false : true);
+  return executeRunner(runnerPath, graphFile, inputs, matrix);
 }
 
 async function main(): Promise<void> {
