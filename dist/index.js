@@ -37774,6 +37774,17 @@ const fs_1 = __importDefault(__nccwpck_require__(7147));
 const got_1 = __importDefault(__nccwpck_require__(137));
 const child_process_1 = __importDefault(__nccwpck_require__(2081));
 const pj = pjdata;
+const StepDebug = "ACTIONS_STEP_DEBUG";
+const IS_DEBUG = process.env[StepDebug] === "true";
+/**
+ * Logs a message to the console if debug mode is enabled.
+ * @param message The message to log.
+ */
+function DebugOutput(message) {
+    if (IS_DEBUG) {
+        console.log(message);
+    }
+}
 /**
  * Extracts the contents of an archive file to a directory.
  * @param archivePath The path to the archive file.
@@ -37781,6 +37792,7 @@ const pj = pjdata;
  */
 function extractArchive(archivePath) {
     return __awaiter(this, void 0, void 0, function* () {
+        DebugOutput(`Extracting archive: ${archivePath}`);
         const platform = os_1.default.platform();
         return platform === "win32"
             // Windows requires the .zip extension for extraction
@@ -37796,6 +37808,7 @@ exports.extractArchive = extractArchive;
  */
 function calculateFileHash(filePath) {
     return __awaiter(this, void 0, void 0, function* () {
+        DebugOutput(`Calculating hash for file: ${filePath}`);
         return new Promise((resolve, reject) => {
             const hash = crypto.createHash('sha256');
             const s = fs_1.default.createReadStream(filePath);
@@ -37813,6 +37826,7 @@ exports.calculateFileHash = calculateFileHash;
  */
 function downloadRunner(info, token, hashCheck) {
     return __awaiter(this, void 0, void 0, function* () {
+        DebugOutput(`Downloading runner from: ${info.downloadUrl}`);
         const tempDir = process.env.RUNNER_TEMP || '.';
         const filename = path_1.default.join(tempDir, info.filename);
         const pipeline = util.promisify(stream.pipeline);
@@ -37824,6 +37838,7 @@ function downloadRunner(info, token, hashCheck) {
         }), fs_1.default.createWriteStream(filename));
         const extPath = yield extractArchive(filename);
         const execPath = path_1.default.join(extPath, info.filename);
+        DebugOutput(`Changing permissions for: ${execPath} to 0o755`);
         fs_1.default.chmodSync(execPath, 0o755);
         if (hashCheck) {
             const hash = yield calculateFileHash(execPath);
@@ -37842,8 +37857,14 @@ function downloadRunner(info, token, hashCheck) {
  */
 function executeRunner(runnerPath, graphFile, inputs, matrix) {
     return __awaiter(this, void 0, void 0, function* () {
+        DebugOutput(`Executing runner: ${runnerPath} with graph file: ${graphFile}`);
         const token = core.getInput("token");
         const octokit = github.getOctokit(token);
+        DebugOutput(`Get content with:
+    owner: ${github.context.repo.owner},
+    repo: ${github.context.repo.repo},
+    ref: ${github.context.sha},
+    path: ${graphFile}`);
         const { data } = yield octokit.rest.repos.getContent({
             owner: github.context.repo.owner,
             repo: github.context.repo.repo,

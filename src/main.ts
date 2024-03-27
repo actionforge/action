@@ -14,6 +14,9 @@ import cp from "child_process";
 
 const pj: BundledPackage = pjdata as unknown as BundledPackage;
 
+const StepDebug = "ACTIONS_STEP_DEBUG";
+const IS_DEBUG = process.env[StepDebug] === "true";
+
 type BundledPackage = {
   name: string;
   version: string;
@@ -30,11 +33,22 @@ export interface IRunnerVersionInfo {
 }
 
 /**
+ * Logs a message to the console if debug mode is enabled.
+ * @param message The message to log.
+ */
+function DebugOutput(message: string): void {
+  if (IS_DEBUG) {
+    console.log(message);
+  }
+}
+
+/**
  * Extracts the contents of an archive file to a directory.
  * @param archivePath The path to the archive file.
  * @returns A Promise that resolves to the path of the extracted directory.
  */
 export async function extractArchive(archivePath: string): Promise<string> {
+  DebugOutput(`Extracting archive: ${archivePath}`);
   const platform = os.platform();
   return platform === "win32"
     // Windows requires the .zip extension for extraction
@@ -48,6 +62,7 @@ export async function extractArchive(archivePath: string): Promise<string> {
  * @returns A Promise that resolves to the hash.
  */
 export async function calculateFileHash(filePath: string): Promise<string> {
+  DebugOutput(`Calculating hash for file: ${filePath}`);
   return new Promise((resolve, reject) => {
     const hash = crypto.createHash('sha256');
     const s = fs.createReadStream(filePath);
@@ -64,6 +79,9 @@ export async function calculateFileHash(filePath: string): Promise<string> {
  * @returns The path to the executable.
  */
 async function downloadRunner(info: IRunnerVersionInfo, token: string | null, hashCheck: boolean): Promise<string> {
+
+  DebugOutput(`Downloading runner from: ${info.downloadUrl}`);
+
   const tempDir = process.env.RUNNER_TEMP || '.';
   const filename = path.join(tempDir, info.filename);
 
@@ -84,6 +102,8 @@ async function downloadRunner(info: IRunnerVersionInfo, token: string | null, ha
 
   const extPath = await extractArchive(filename);
   const execPath = path.join(extPath, info.filename);
+
+  DebugOutput(`Changing permissions for: ${execPath} to 0o755`);
   fs.chmodSync(execPath, 0o755);
 
   if (hashCheck) {
@@ -108,9 +128,17 @@ async function executeRunner(
   inputs: string,
   matrix: string,
 ): Promise<void> {
+  DebugOutput(`Executing runner: ${runnerPath} with graph file: ${graphFile}`);
   const token = core.getInput("token");
 
   const octokit = github.getOctokit(token);
+
+  DebugOutput(`Get content with:
+    owner: ${github.context.repo.owner},
+    repo: ${github.context.repo.repo},
+    ref: ${github.context.sha},
+    path: ${graphFile}`);
+
   const { data } = await octokit.rest.repos.getContent({
     owner: github.context.repo.owner,
     repo: github.context.repo.repo,
