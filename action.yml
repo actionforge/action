@@ -26,7 +26,12 @@ inputs:
     default: '{}'
   runner_base_url:
     description: >
-      Custom runner URL to use for the Actionforge action graph.
+      Custom runner URL from which to obtain the graph runner binary.
+    required: false
+    default: ''
+  runner_path:
+    description: >
+      Custom path to the graph runner binary to execute the action graph.
     required: false
     default: ''
 branding:
