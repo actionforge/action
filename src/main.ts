@@ -129,7 +129,7 @@ async function executeRunner(
     INPUT_INPUTS: inputs,
   };
   console.log(`🟢 Running graph-runner`, graphFile);
-  cp.execSync(`${runnerPath} run`, { stdio: "inherit", env: customEnv });
+  cp.execSync(runnerPath, { stdio: "inherit", env: customEnv });
 }
 
 /**
@@ -174,8 +174,9 @@ async function run(): Promise<void> {
   console.log(output);
   console.log(`${delimiter}`);
 
-  if (!runnerPath) {
-
+  if (runnerPath) {
+    console.log("\u27a1 Custom runner path set:", runnerPath);
+  } else {
     const baseUrl = `https://github.com/actionforge/${pj.name}/releases/download/v${pj.version}`;
     const downloadUrl = `${runnerBaseUrl.replace(/\/$/, "") || baseUrl}/graph-runner-${os.platform()}-${os.arch()}.tar.gz`;
     if (runnerBaseUrl) {
