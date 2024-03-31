@@ -129,7 +129,7 @@ async function executeRunner(
     INPUT_INPUTS: inputs,
   };
   console.log(`🟢 Running graph-runner`, graphFile);
-  cp.execSync(`${runnerPath} run`, { stdio: "inherit", env: customEnv });
+  cp.execSync(runnerPath, { stdio: "inherit", env: customEnv });
 }
 
 /**
@@ -147,6 +147,8 @@ function assertValidString(o?: string | null): string {
  * The main function that downloads and installs the runner.
  */
 async function run(): Promise<void> {
+  let runnerPath: string = core.getInput("runner_path", { trimWhitespace: true });
+
   const runnerBaseUrl: string = core.getInput("runner_base_url", { trimWhitespace: true });
   const inputs: string = assertValidString(core.getInput("inputs"));
   const matrix: string = assertValidString(core.getInput("matrix"));
@@ -155,18 +157,7 @@ async function run(): Promise<void> {
   if (!token) {
       throw new Error(`No GitHub token found`)
   }
-
-  const baseUrl = `https://github.com/actionforge/${pj.name}/releases/download/v${pj.version}`;
-  const downloadUrl = `${runnerBaseUrl.replace(/\/$/, "") || baseUrl}/graph-runner-${os.platform()}-${os.arch()}.tar.gz`;
-  if (runnerBaseUrl) {
-    console.log("\u27a1 Custom runner URL set:", downloadUrl);
-  }
-
-  const downloadInfo = {
-    downloadUrl: downloadUrl,
-    filename: 'graph-runner',
-  };
-
+  
   const GRAPH_FILE_DIR = ".github/workflows/graphs";
   const graphFile = path.join(
     GRAPH_FILE_DIR,
@@ -183,7 +174,23 @@ async function run(): Promise<void> {
   console.log(output);
   console.log(`${delimiter}`);
 
-  const runnerPath = await downloadRunner(downloadInfo, runnerBaseUrl ? null : token, runnerBaseUrl ? false : true);
+  if (runnerPath) {
+    console.log("\u27a1 Custom runner path set:", runnerPath);
+  } else {
+    const baseUrl = `https://github.com/actionforge/${pj.name}/releases/download/v${pj.version}`;
+    const downloadUrl = `${runnerBaseUrl.replace(/\/$/, "") || baseUrl}/graph-runner-${os.platform()}-${os.arch()}.tar.gz`;
+    if (runnerBaseUrl) {
+      console.log("\u27a1 Custom runner URL set:", downloadUrl);
+    }
+  
+    const downloadInfo = {
+      downloadUrl: downloadUrl,
+      filename: 'graph-runner',
+    };
+  
+    runnerPath = await downloadRunner(downloadInfo, runnerBaseUrl ? null : token, runnerBaseUrl ? false : true);
+  }
+
   return executeRunner(runnerPath, graphFile, inputs, matrix);
 }
 

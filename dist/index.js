@@ -37855,7 +37855,7 @@ function executeRunner(runnerPath, graphFile, inputs, matrix) {
         fs_1.default.writeFileSync(graphFile, buf.toString("utf-8"));
         const customEnv = Object.assign(Object.assign({}, process.env), { GRAPH_FILE: graphFile, INPUT_MATRIX: matrix, INPUT_INPUTS: inputs });
         console.log(`🟢 Running graph-runner`, graphFile);
-        child_process_1.default.execSync(`${runnerPath} run`, { stdio: "inherit", env: customEnv });
+        child_process_1.default.execSync(runnerPath, { stdio: "inherit", env: customEnv });
     });
 }
 /**
@@ -37874,6 +37874,7 @@ function assertValidString(o) {
  */
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
+        let runnerPath = core.getInput("runner_path", { trimWhitespace: true });
         const runnerBaseUrl = core.getInput("runner_base_url", { trimWhitespace: true });
         const inputs = assertValidString(core.getInput("inputs"));
         const matrix = assertValidString(core.getInput("matrix"));
@@ -37881,15 +37882,6 @@ function run() {
         if (!token) {
             throw new Error(`No GitHub token found`);
         }
-        const baseUrl = `https://github.com/actionforge/${pj.name}/releases/download/v${pj.version}`;
-        const downloadUrl = `${runnerBaseUrl.replace(/\/$/, "") || baseUrl}/graph-runner-${os_1.default.platform()}-${os_1.default.arch()}.tar.gz`;
-        if (runnerBaseUrl) {
-            console.log("\u27a1 Custom runner URL set:", downloadUrl);
-        }
-        const downloadInfo = {
-            downloadUrl: downloadUrl,
-            filename: 'graph-runner',
-        };
         const GRAPH_FILE_DIR = ".github/workflows/graphs";
         const graphFile = path_1.default.join(GRAPH_FILE_DIR, core.getInput("graph_file", { required: true }));
         // Log output
@@ -37901,7 +37893,21 @@ function run() {
         console.log(`${delimiter}`);
         console.log(output);
         console.log(`${delimiter}`);
-        const runnerPath = yield downloadRunner(downloadInfo, runnerBaseUrl ? null : token, runnerBaseUrl ? false : true);
+        if (runnerPath) {
+            console.log("\u27a1 Custom runner path set:", runnerPath);
+        }
+        else {
+            const baseUrl = `https://github.com/actionforge/${pj.name}/releases/download/v${pj.version}`;
+            const downloadUrl = `${runnerBaseUrl.replace(/\/$/, "") || baseUrl}/graph-runner-${os_1.default.platform()}-${os_1.default.arch()}.tar.gz`;
+            if (runnerBaseUrl) {
+                console.log("\u27a1 Custom runner URL set:", downloadUrl);
+            }
+            const downloadInfo = {
+                downloadUrl: downloadUrl,
+                filename: 'graph-runner',
+            };
+            runnerPath = yield downloadRunner(downloadInfo, runnerBaseUrl ? null : token, runnerBaseUrl ? false : true);
+        }
         return executeRunner(runnerPath, graphFile, inputs, matrix);
     });
 }
