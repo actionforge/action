@@ -44058,7 +44058,7 @@ const got = source_create(defaults);
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse('{"name":"action","version":"0.9.42","binaries":{"linux":"441310a4fab6b0894b36d70f8fe4f28b145093a534d9f219a3b1fb3c2acc09e9"}}');
+module.exports = JSON.parse('{"name":"action","version":"0.9.52","binaries":{"linux":"46cd9d2c74986f7329ca76dde6448f934231a53bd5b248da453505c8b97e6db6"}}');
 
 /***/ })
 
