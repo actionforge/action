@@ -1,6 +1,6 @@
 {
   "name": "action",
-  "version": "0.9.52",
+  "version": "0.9.53",
   "binaries": {
     "linux": "46cd9d2c74986f7329ca76dde6448f934231a53bd5b248da453505c8b97e6db6"
   }

@@ -107,6 +107,7 @@ async function executeRunner(
   graphFile: string,
   inputs: string,
   matrix: string,
+  secrets: string,
 ): Promise<void> {
   const token = core.getInput("token");
 
@@ -127,6 +128,7 @@ async function executeRunner(
     GRAPH_FILE: graphFile,
     INPUT_MATRIX: matrix,
     INPUT_INPUTS: inputs,
+    INPUT_SECRETS: secrets,
   };
   console.log(`🟢 Running graph-runner`, graphFile);
   cp.execSync(runnerPath, { stdio: "inherit", env: customEnv });
@@ -152,6 +154,7 @@ async function run(): Promise<void> {
   const runnerBaseUrl: string = core.getInput("runner_base_url", { trimWhitespace: true });
   const inputs: string = assertValidString(core.getInput("inputs"));
   const matrix: string = assertValidString(core.getInput("matrix"));
+  const secrets: string = assertValidString(core.getInput("secrets"));
 
   const token = core.getInput("token");
   if (!token) {
@@ -191,7 +194,7 @@ async function run(): Promise<void> {
     runnerPath = await downloadRunner(downloadInfo, runnerBaseUrl ? null : token, runnerBaseUrl ? false : true);
   }
 
-  return executeRunner(runnerPath, graphFile, inputs, matrix);
+  return executeRunner(runnerPath, graphFile, inputs, matrix, secrets);
 }
 
 async function main(): Promise<void> {

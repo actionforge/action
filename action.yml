@@ -19,6 +19,11 @@ inputs:
       A JSON string containing the inputs to be passed to the Actionforge action graph.
     required: false
     default: '{}'
+  secrets:
+    description: >
+      A JSON string containing the secrets to be passed to the Actionforge action graph.
+    required: false
+    default: '{}'
   matrix:
     description: >
       A JSON string containing the matrix to be passed to the Actionforge action graph.

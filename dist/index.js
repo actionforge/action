@@ -37840,7 +37840,7 @@ function downloadRunner(info, token, hashCheck) {
  * @param graphFile The path to the graph file.
  * @returns A Promise that resolves when the runner has finished executing.
  */
-function executeRunner(runnerPath, graphFile, inputs, matrix) {
+function executeRunner(runnerPath, graphFile, inputs, matrix, secrets) {
     return __awaiter(this, void 0, void 0, function* () {
         const token = core.getInput("token");
         const octokit = github.getOctokit(token);
@@ -37853,7 +37853,7 @@ function executeRunner(runnerPath, graphFile, inputs, matrix) {
         fs_1.default.mkdirSync(path_1.default.dirname(graphFile), { recursive: true });
         const buf = Buffer.from(data.content, "base64");
         fs_1.default.writeFileSync(graphFile, buf.toString("utf-8"));
-        const customEnv = Object.assign(Object.assign({}, process.env), { GRAPH_FILE: graphFile, INPUT_MATRIX: matrix, INPUT_INPUTS: inputs });
+        const customEnv = Object.assign(Object.assign({}, process.env), { GRAPH_FILE: graphFile, INPUT_MATRIX: matrix, INPUT_INPUTS: inputs, INPUT_SECRETS: secrets });
         console.log(`🟢 Running graph-runner`, graphFile);
         child_process_1.default.execSync(runnerPath, { stdio: "inherit", env: customEnv });
     });
@@ -37878,6 +37878,7 @@ function run() {
         const runnerBaseUrl = core.getInput("runner_base_url", { trimWhitespace: true });
         const inputs = assertValidString(core.getInput("inputs"));
         const matrix = assertValidString(core.getInput("matrix"));
+        const secrets = assertValidString(core.getInput("secrets"));
         const token = core.getInput("token");
         if (!token) {
             throw new Error(`No GitHub token found`);
@@ -37908,7 +37909,7 @@ function run() {
             };
             runnerPath = yield downloadRunner(downloadInfo, runnerBaseUrl ? null : token, runnerBaseUrl ? false : true);
         }
-        return executeRunner(runnerPath, graphFile, inputs, matrix);
+        return executeRunner(runnerPath, graphFile, inputs, matrix, secrets);
     });
 }
 function main() {
@@ -44058,7 +44059,7 @@ const got = source_create(defaults);
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse('{"name":"action","version":"0.9.52","binaries":{"linux":"46cd9d2c74986f7329ca76dde6448f934231a53bd5b248da453505c8b97e6db6"}}');
+module.exports = JSON.parse('{"name":"action","version":"0.9.53","binaries":{"linux":"46cd9d2c74986f7329ca76dde6448f934231a53bd5b248da453505c8b97e6db6"}}');
 
 /***/ })
 
