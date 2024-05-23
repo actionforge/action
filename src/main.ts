@@ -17,7 +17,7 @@ const pj: BundledPackage = pjdata as unknown as BundledPackage;
 type BundledPackage = {
   name: string;
   version: string;
-  binaries: Record<NodeJS.Platform, string>;
+  binaries: Record<string, string>;
 };
 
 /**
@@ -35,11 +35,7 @@ export interface IRunnerVersionInfo {
  * @returns A Promise that resolves to the path of the extracted directory.
  */
 export async function extractArchive(archivePath: string): Promise<string> {
-  const platform = os.platform();
-  return platform === "win32"
-    // Windows requires the .zip extension for extraction
-    ? tc.extractZip(archivePath + '.zip')
-    : tc.extractTar(archivePath);
+  return archivePath.endsWith(".zip") ? tc.extractZip(archivePath) : tc.extractTar(archivePath);
 }
 
 /**
@@ -83,12 +79,16 @@ async function downloadRunner(info: IRunnerVersionInfo, token: string | null, ha
   );
 
   const extPath = await extractArchive(filename);
-  const execPath = path.join(extPath, info.filename);
-  fs.chmodSync(execPath, 0o755);
+  let execPath = path.join(extPath, info.filename);
+  if (os.platform() === "linux" || os.platform() === "darwin") {
+    fs.chmodSync(execPath, 0o755);
+  } else {
+    execPath = execPath + ".exe";
+  }
 
   if (hashCheck) {
     const hash = await calculateFileHash(execPath);
-    if (hash.length !== 64 || hash !== pj.binaries[os.platform()]) {
+    if (hash.length !== 64 || hash !== pj.binaries[`${os.platform()}-${os.arch()}`]) {
       throw new Error(`Hash mismatch for ${execPath}`);
     }
   }
@@ -112,6 +112,7 @@ async function executeRunner(
   const token = core.getInput("token");
 
   const octokit = github.getOctokit(token);
+
   const { data } = await octokit.rest.repos.getContent({
     owner: github.context.repo.owner,
     repo: github.context.repo.repo,
@@ -181,7 +182,8 @@ async function run(): Promise<void> {
     console.log("\u27a1 Custom runner path set:", runnerPath);
   } else {
     const baseUrl = `https://github.com/actionforge/${pj.name}/releases/download/v${pj.version}`;
-    const downloadUrl = `${runnerBaseUrl.replace(/\/$/, "") || baseUrl}/graph-runner-${os.platform()}-${os.arch()}.tar.gz`;
+    const archiveExt = os.platform() === "linux" ? "tar.gz" : "zip";
+    const downloadUrl = `${runnerBaseUrl.replace(/\/$/, "") || baseUrl}/graph-runner-${os.platform()}-${os.arch()}.${archiveExt}`;
     if (runnerBaseUrl) {
       console.log("\u27a1 Custom runner URL set:", downloadUrl);
     }

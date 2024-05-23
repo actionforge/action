@@ -2578,7 +2578,7 @@ class HttpClient {
         if (this._keepAlive && useProxy) {
             agent = this._proxyAgent;
         }
-        if (this._keepAlive && !useProxy) {
+        if (!useProxy) {
             agent = this._agent;
         }
         // if agent is already assigned use that agent.
@@ -2610,15 +2610,11 @@ class HttpClient {
             agent = tunnelAgent(agentOptions);
             this._proxyAgent = agent;
         }
-        // if reusing agent across request and tunneling agent isn't assigned create a new agent
-        if (this._keepAlive && !agent) {
+        // if tunneling agent isn't assigned create a new agent
+        if (!agent) {
             const options = { keepAlive: this._keepAlive, maxSockets };
             agent = usingSsl ? new https.Agent(options) : new http.Agent(options);
             this._agent = agent;
-        }
-        // if not using private agent and tunnel agent isn't setup then use global agent
-        if (!agent) {
-            agent = usingSsl ? https.globalAgent : http.globalAgent;
         }
         if (usingSsl && this._ignoreSslError) {
             // we don't want to set NODE_TLS_REJECT_UNAUTHORIZED=0 since that will affect request for entire process
@@ -4299,1429 +4295,176 @@ module.exports = v4;
 
 /***/ }),
 
-/***/ 2856:
+/***/ 6762:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-const WritableStream = (__nccwpck_require__(4492).Writable)
-const inherits = (__nccwpck_require__(7261).inherits)
+// pkg/dist-src/index.js
+var dist_src_exports = {};
+__export(dist_src_exports, {
+  Octokit: () => Octokit
+});
+module.exports = __toCommonJS(dist_src_exports);
+var import_universal_user_agent = __nccwpck_require__(5030);
+var import_before_after_hook = __nccwpck_require__(3682);
+var import_request = __nccwpck_require__(6234);
+var import_graphql = __nccwpck_require__(8467);
+var import_auth_token = __nccwpck_require__(5542);
 
-const StreamSearch = __nccwpck_require__(8534)
+// pkg/dist-src/version.js
+var VERSION = "5.2.0";
 
-const PartStream = __nccwpck_require__(8710)
-const HeaderParser = __nccwpck_require__(333)
-
-const DASH = 45
-const B_ONEDASH = Buffer.from('-')
-const B_CRLF = Buffer.from('\r\n')
-const EMPTY_FN = function () {}
-
-function Dicer (cfg) {
-  if (!(this instanceof Dicer)) { return new Dicer(cfg) }
-  WritableStream.call(this, cfg)
-
-  if (!cfg || (!cfg.headerFirst && typeof cfg.boundary !== 'string')) { throw new TypeError('Boundary required') }
-
-  if (typeof cfg.boundary === 'string') { this.setBoundary(cfg.boundary) } else { this._bparser = undefined }
-
-  this._headerFirst = cfg.headerFirst
-
-  this._dashes = 0
-  this._parts = 0
-  this._finished = false
-  this._realFinish = false
-  this._isPreamble = true
-  this._justMatched = false
-  this._firstWrite = true
-  this._inHeader = true
-  this._part = undefined
-  this._cb = undefined
-  this._ignoreData = false
-  this._partOpts = { highWaterMark: cfg.partHwm }
-  this._pause = false
-
-  const self = this
-  this._hparser = new HeaderParser(cfg)
-  this._hparser.on('header', function (header) {
-    self._inHeader = false
-    self._part.emit('header', header)
-  })
-}
-inherits(Dicer, WritableStream)
-
-Dicer.prototype.emit = function (ev) {
-  if (ev === 'finish' && !this._realFinish) {
-    if (!this._finished) {
-      const self = this
-      process.nextTick(function () {
-        self.emit('error', new Error('Unexpected end of multipart data'))
-        if (self._part && !self._ignoreData) {
-          const type = (self._isPreamble ? 'Preamble' : 'Part')
-          self._part.emit('error', new Error(type + ' terminated early due to unexpected end of multipart data'))
-          self._part.push(null)
-          process.nextTick(function () {
-            self._realFinish = true
-            self.emit('finish')
-            self._realFinish = false
-          })
-          return
+// pkg/dist-src/index.js
+var noop = () => {
+};
+var consoleWarn = console.warn.bind(console);
+var consoleError = console.error.bind(console);
+var userAgentTrail = `octokit-core.js/${VERSION} ${(0, import_universal_user_agent.getUserAgent)()}`;
+var Octokit = class {
+  static {
+    this.VERSION = VERSION;
+  }
+  static defaults(defaults) {
+    const OctokitWithDefaults = class extends this {
+      constructor(...args) {
+        const options = args[0] || {};
+        if (typeof defaults === "function") {
+          super(defaults(options));
+          return;
         }
-        self._realFinish = true
-        self.emit('finish')
-        self._realFinish = false
-      })
+        super(
+          Object.assign(
+            {},
+            defaults,
+            options,
+            options.userAgent && defaults.userAgent ? {
+              userAgent: `${options.userAgent} ${defaults.userAgent}`
+            } : null
+          )
+        );
+      }
+    };
+    return OctokitWithDefaults;
+  }
+  static {
+    this.plugins = [];
+  }
+  /**
+   * Attach a plugin (or many) to your Octokit instance.
+   *
+   * @example
+   * const API = Octokit.plugin(plugin1, plugin2, plugin3, ...)
+   */
+  static plugin(...newPlugins) {
+    const currentPlugins = this.plugins;
+    const NewOctokit = class extends this {
+      static {
+        this.plugins = currentPlugins.concat(
+          newPlugins.filter((plugin) => !currentPlugins.includes(plugin))
+        );
+      }
+    };
+    return NewOctokit;
+  }
+  constructor(options = {}) {
+    const hook = new import_before_after_hook.Collection();
+    const requestDefaults = {
+      baseUrl: import_request.request.endpoint.DEFAULTS.baseUrl,
+      headers: {},
+      request: Object.assign({}, options.request, {
+        // @ts-ignore internal usage only, no need to type
+        hook: hook.bind(null, "request")
+      }),
+      mediaType: {
+        previews: [],
+        format: ""
+      }
+    };
+    requestDefaults.headers["user-agent"] = options.userAgent ? `${options.userAgent} ${userAgentTrail}` : userAgentTrail;
+    if (options.baseUrl) {
+      requestDefaults.baseUrl = options.baseUrl;
     }
-  } else { WritableStream.prototype.emit.apply(this, arguments) }
-}
-
-Dicer.prototype._write = function (data, encoding, cb) {
-  // ignore unexpected data (e.g. extra trailer data after finished)
-  if (!this._hparser && !this._bparser) { return cb() }
-
-  if (this._headerFirst && this._isPreamble) {
-    if (!this._part) {
-      this._part = new PartStream(this._partOpts)
-      if (this._events.preamble) { this.emit('preamble', this._part) } else { this._ignore() }
+    if (options.previews) {
+      requestDefaults.mediaType.previews = options.previews;
     }
-    const r = this._hparser.push(data)
-    if (!this._inHeader && r !== undefined && r < data.length) { data = data.slice(r) } else { return cb() }
-  }
-
-  // allows for "easier" testing
-  if (this._firstWrite) {
-    this._bparser.push(B_CRLF)
-    this._firstWrite = false
-  }
-
-  this._bparser.push(data)
-
-  if (this._pause) { this._cb = cb } else { cb() }
-}
-
-Dicer.prototype.reset = function () {
-  this._part = undefined
-  this._bparser = undefined
-  this._hparser = undefined
-}
-
-Dicer.prototype.setBoundary = function (boundary) {
-  const self = this
-  this._bparser = new StreamSearch('\r\n--' + boundary)
-  this._bparser.on('info', function (isMatch, data, start, end) {
-    self._oninfo(isMatch, data, start, end)
-  })
-}
-
-Dicer.prototype._ignore = function () {
-  if (this._part && !this._ignoreData) {
-    this._ignoreData = true
-    this._part.on('error', EMPTY_FN)
-    // we must perform some kind of read on the stream even though we are
-    // ignoring the data, otherwise node's Readable stream will not emit 'end'
-    // after pushing null to the stream
-    this._part.resume()
-  }
-}
-
-Dicer.prototype._oninfo = function (isMatch, data, start, end) {
-  let buf; const self = this; let i = 0; let r; let shouldWriteMore = true
-
-  if (!this._part && this._justMatched && data) {
-    while (this._dashes < 2 && (start + i) < end) {
-      if (data[start + i] === DASH) {
-        ++i
-        ++this._dashes
+    if (options.timeZone) {
+      requestDefaults.headers["time-zone"] = options.timeZone;
+    }
+    this.request = import_request.request.defaults(requestDefaults);
+    this.graphql = (0, import_graphql.withCustomRequest)(this.request).defaults(requestDefaults);
+    this.log = Object.assign(
+      {
+        debug: noop,
+        info: noop,
+        warn: consoleWarn,
+        error: consoleError
+      },
+      options.log
+    );
+    this.hook = hook;
+    if (!options.authStrategy) {
+      if (!options.auth) {
+        this.auth = async () => ({
+          type: "unauthenticated"
+        });
       } else {
-        if (this._dashes) { buf = B_ONEDASH }
-        this._dashes = 0
-        break
-      }
-    }
-    if (this._dashes === 2) {
-      if ((start + i) < end && this._events.trailer) { this.emit('trailer', data.slice(start + i, end)) }
-      this.reset()
-      this._finished = true
-      // no more parts will be added
-      if (self._parts === 0) {
-        self._realFinish = true
-        self.emit('finish')
-        self._realFinish = false
-      }
-    }
-    if (this._dashes) { return }
-  }
-  if (this._justMatched) { this._justMatched = false }
-  if (!this._part) {
-    this._part = new PartStream(this._partOpts)
-    this._part._read = function (n) {
-      self._unpause()
-    }
-    if (this._isPreamble && this._events.preamble) { this.emit('preamble', this._part) } else if (this._isPreamble !== true && this._events.part) { this.emit('part', this._part) } else { this._ignore() }
-    if (!this._isPreamble) { this._inHeader = true }
-  }
-  if (data && start < end && !this._ignoreData) {
-    if (this._isPreamble || !this._inHeader) {
-      if (buf) { shouldWriteMore = this._part.push(buf) }
-      shouldWriteMore = this._part.push(data.slice(start, end))
-      if (!shouldWriteMore) { this._pause = true }
-    } else if (!this._isPreamble && this._inHeader) {
-      if (buf) { this._hparser.push(buf) }
-      r = this._hparser.push(data.slice(start, end))
-      if (!this._inHeader && r !== undefined && r < end) { this._oninfo(false, data, start + r, end) }
-    }
-  }
-  if (isMatch) {
-    this._hparser.reset()
-    if (this._isPreamble) { this._isPreamble = false } else {
-      if (start !== end) {
-        ++this._parts
-        this._part.on('end', function () {
-          if (--self._parts === 0) {
-            if (self._finished) {
-              self._realFinish = true
-              self.emit('finish')
-              self._realFinish = false
-            } else {
-              self._unpause()
-            }
-          }
-        })
-      }
-    }
-    this._part.push(null)
-    this._part = undefined
-    this._ignoreData = false
-    this._justMatched = true
-    this._dashes = 0
-  }
-}
-
-Dicer.prototype._unpause = function () {
-  if (!this._pause) { return }
-
-  this._pause = false
-  if (this._cb) {
-    const cb = this._cb
-    this._cb = undefined
-    cb()
-  }
-}
-
-module.exports = Dicer
-
-
-/***/ }),
-
-/***/ 333:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-const EventEmitter = (__nccwpck_require__(5673).EventEmitter)
-const inherits = (__nccwpck_require__(7261).inherits)
-const getLimit = __nccwpck_require__(9692)
-
-const StreamSearch = __nccwpck_require__(8534)
-
-const B_DCRLF = Buffer.from('\r\n\r\n')
-const RE_CRLF = /\r\n/g
-const RE_HDR = /^([^:]+):[ \t]?([\x00-\xFF]+)?$/ // eslint-disable-line no-control-regex
-
-function HeaderParser (cfg) {
-  EventEmitter.call(this)
-
-  cfg = cfg || {}
-  const self = this
-  this.nread = 0
-  this.maxed = false
-  this.npairs = 0
-  this.maxHeaderPairs = getLimit(cfg, 'maxHeaderPairs', 2000)
-  this.maxHeaderSize = getLimit(cfg, 'maxHeaderSize', 80 * 1024)
-  this.buffer = ''
-  this.header = {}
-  this.finished = false
-  this.ss = new StreamSearch(B_DCRLF)
-  this.ss.on('info', function (isMatch, data, start, end) {
-    if (data && !self.maxed) {
-      if (self.nread + end - start >= self.maxHeaderSize) {
-        end = self.maxHeaderSize - self.nread + start
-        self.nread = self.maxHeaderSize
-        self.maxed = true
-      } else { self.nread += (end - start) }
-
-      self.buffer += data.toString('binary', start, end)
-    }
-    if (isMatch) { self._finish() }
-  })
-}
-inherits(HeaderParser, EventEmitter)
-
-HeaderParser.prototype.push = function (data) {
-  const r = this.ss.push(data)
-  if (this.finished) { return r }
-}
-
-HeaderParser.prototype.reset = function () {
-  this.finished = false
-  this.buffer = ''
-  this.header = {}
-  this.ss.reset()
-}
-
-HeaderParser.prototype._finish = function () {
-  if (this.buffer) { this._parseHeader() }
-  this.ss.matches = this.ss.maxMatches
-  const header = this.header
-  this.header = {}
-  this.buffer = ''
-  this.finished = true
-  this.nread = this.npairs = 0
-  this.maxed = false
-  this.emit('header', header)
-}
-
-HeaderParser.prototype._parseHeader = function () {
-  if (this.npairs === this.maxHeaderPairs) { return }
-
-  const lines = this.buffer.split(RE_CRLF)
-  const len = lines.length
-  let m, h
-
-  for (var i = 0; i < len; ++i) { // eslint-disable-line no-var
-    if (lines[i].length === 0) { continue }
-    if (lines[i][0] === '\t' || lines[i][0] === ' ') {
-      // folded header content
-      // RFC2822 says to just remove the CRLF and not the whitespace following
-      // it, so we follow the RFC and include the leading whitespace ...
-      if (h) {
-        this.header[h][this.header[h].length - 1] += lines[i]
-        continue
-      }
-    }
-
-    const posColon = lines[i].indexOf(':')
-    if (
-      posColon === -1 ||
-      posColon === 0
-    ) {
-      return
-    }
-    m = RE_HDR.exec(lines[i])
-    h = m[1].toLowerCase()
-    this.header[h] = this.header[h] || []
-    this.header[h].push((m[2] || ''))
-    if (++this.npairs === this.maxHeaderPairs) { break }
-  }
-}
-
-module.exports = HeaderParser
-
-
-/***/ }),
-
-/***/ 8710:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-const inherits = (__nccwpck_require__(7261).inherits)
-const ReadableStream = (__nccwpck_require__(4492).Readable)
-
-function PartStream (opts) {
-  ReadableStream.call(this, opts)
-}
-inherits(PartStream, ReadableStream)
-
-PartStream.prototype._read = function (n) {}
-
-module.exports = PartStream
-
-
-/***/ }),
-
-/***/ 8534:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-/**
- * Copyright Brian White. All rights reserved.
- *
- * @see https://github.com/mscdex/streamsearch
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to
- * deal in the Software without restriction, including without limitation the
- * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
- * sell copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
- * IN THE SOFTWARE.
- *
- * Based heavily on the Streaming Boyer-Moore-Horspool C++ implementation
- * by Hongli Lai at: https://github.com/FooBarWidget/boyer-moore-horspool
- */
-const EventEmitter = (__nccwpck_require__(5673).EventEmitter)
-const inherits = (__nccwpck_require__(7261).inherits)
-
-function SBMH (needle) {
-  if (typeof needle === 'string') {
-    needle = Buffer.from(needle)
-  }
-
-  if (!Buffer.isBuffer(needle)) {
-    throw new TypeError('The needle has to be a String or a Buffer.')
-  }
-
-  const needleLength = needle.length
-
-  if (needleLength === 0) {
-    throw new Error('The needle cannot be an empty String/Buffer.')
-  }
-
-  if (needleLength > 256) {
-    throw new Error('The needle cannot have a length bigger than 256.')
-  }
-
-  this.maxMatches = Infinity
-  this.matches = 0
-
-  this._occ = new Array(256)
-    .fill(needleLength) // Initialize occurrence table.
-  this._lookbehind_size = 0
-  this._needle = needle
-  this._bufpos = 0
-
-  this._lookbehind = Buffer.alloc(needleLength)
-
-  // Populate occurrence table with analysis of the needle,
-  // ignoring last letter.
-  for (var i = 0; i < needleLength - 1; ++i) { // eslint-disable-line no-var
-    this._occ[needle[i]] = needleLength - 1 - i
-  }
-}
-inherits(SBMH, EventEmitter)
-
-SBMH.prototype.reset = function () {
-  this._lookbehind_size = 0
-  this.matches = 0
-  this._bufpos = 0
-}
-
-SBMH.prototype.push = function (chunk, pos) {
-  if (!Buffer.isBuffer(chunk)) {
-    chunk = Buffer.from(chunk, 'binary')
-  }
-  const chlen = chunk.length
-  this._bufpos = pos || 0
-  let r
-  while (r !== chlen && this.matches < this.maxMatches) { r = this._sbmh_feed(chunk) }
-  return r
-}
-
-SBMH.prototype._sbmh_feed = function (data) {
-  const len = data.length
-  const needle = this._needle
-  const needleLength = needle.length
-  const lastNeedleChar = needle[needleLength - 1]
-
-  // Positive: points to a position in `data`
-  //           pos == 3 points to data[3]
-  // Negative: points to a position in the lookbehind buffer
-  //           pos == -2 points to lookbehind[lookbehind_size - 2]
-  let pos = -this._lookbehind_size
-  let ch
-
-  if (pos < 0) {
-    // Lookbehind buffer is not empty. Perform Boyer-Moore-Horspool
-    // search with character lookup code that considers both the
-    // lookbehind buffer and the current round's haystack data.
-    //
-    // Loop until
-    //   there is a match.
-    // or until
-    //   we've moved past the position that requires the
-    //   lookbehind buffer. In this case we switch to the
-    //   optimized loop.
-    // or until
-    //   the character to look at lies outside the haystack.
-    while (pos < 0 && pos <= len - needleLength) {
-      ch = this._sbmh_lookup_char(data, pos + needleLength - 1)
-
-      if (
-        ch === lastNeedleChar &&
-        this._sbmh_memcmp(data, pos, needleLength - 1)
-      ) {
-        this._lookbehind_size = 0
-        ++this.matches
-        this.emit('info', true)
-
-        return (this._bufpos = pos + needleLength)
-      }
-      pos += this._occ[ch]
-    }
-
-    // No match.
-
-    if (pos < 0) {
-      // There's too few data for Boyer-Moore-Horspool to run,
-      // so let's use a different algorithm to skip as much as
-      // we can.
-      // Forward pos until
-      //   the trailing part of lookbehind + data
-      //   looks like the beginning of the needle
-      // or until
-      //   pos == 0
-      while (pos < 0 && !this._sbmh_memcmp(data, pos, len - pos)) { ++pos }
-    }
-
-    if (pos >= 0) {
-      // Discard lookbehind buffer.
-      this.emit('info', false, this._lookbehind, 0, this._lookbehind_size)
-      this._lookbehind_size = 0
-    } else {
-      // Cut off part of the lookbehind buffer that has
-      // been processed and append the entire haystack
-      // into it.
-      const bytesToCutOff = this._lookbehind_size + pos
-      if (bytesToCutOff > 0) {
-        // The cut off data is guaranteed not to contain the needle.
-        this.emit('info', false, this._lookbehind, 0, bytesToCutOff)
-      }
-
-      this._lookbehind.copy(this._lookbehind, 0, bytesToCutOff,
-        this._lookbehind_size - bytesToCutOff)
-      this._lookbehind_size -= bytesToCutOff
-
-      data.copy(this._lookbehind, this._lookbehind_size)
-      this._lookbehind_size += len
-
-      this._bufpos = len
-      return len
-    }
-  }
-
-  pos += (pos >= 0) * this._bufpos
-
-  // Lookbehind buffer is now empty. We only need to check if the
-  // needle is in the haystack.
-  if (data.indexOf(needle, pos) !== -1) {
-    pos = data.indexOf(needle, pos)
-    ++this.matches
-    if (pos > 0) { this.emit('info', true, data, this._bufpos, pos) } else { this.emit('info', true) }
-
-    return (this._bufpos = pos + needleLength)
-  } else {
-    pos = len - needleLength
-  }
-
-  // There was no match. If there's trailing haystack data that we cannot
-  // match yet using the Boyer-Moore-Horspool algorithm (because the trailing
-  // data is less than the needle size) then match using a modified
-  // algorithm that starts matching from the beginning instead of the end.
-  // Whatever trailing data is left after running this algorithm is added to
-  // the lookbehind buffer.
-  while (
-    pos < len &&
-    (
-      data[pos] !== needle[0] ||
-      (
-        (Buffer.compare(
-          data.subarray(pos, pos + len - pos),
-          needle.subarray(0, len - pos)
-        ) !== 0)
-      )
-    )
-  ) {
-    ++pos
-  }
-  if (pos < len) {
-    data.copy(this._lookbehind, 0, pos, pos + (len - pos))
-    this._lookbehind_size = len - pos
-  }
-
-  // Everything until pos is guaranteed not to contain needle data.
-  if (pos > 0) { this.emit('info', false, data, this._bufpos, pos < len ? pos : len) }
-
-  this._bufpos = len
-  return len
-}
-
-SBMH.prototype._sbmh_lookup_char = function (data, pos) {
-  return (pos < 0)
-    ? this._lookbehind[this._lookbehind_size + pos]
-    : data[pos]
-}
-
-SBMH.prototype._sbmh_memcmp = function (data, pos, len) {
-  for (var i = 0; i < len; ++i) { // eslint-disable-line no-var
-    if (this._sbmh_lookup_char(data, pos + i) !== this._needle[i]) { return false }
-  }
-  return true
-}
-
-module.exports = SBMH
-
-
-/***/ }),
-
-/***/ 3438:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-const WritableStream = (__nccwpck_require__(4492).Writable)
-const { inherits } = __nccwpck_require__(7261)
-const Dicer = __nccwpck_require__(2856)
-
-const MultipartParser = __nccwpck_require__(415)
-const UrlencodedParser = __nccwpck_require__(6780)
-const parseParams = __nccwpck_require__(4426)
-
-function Busboy (opts) {
-  if (!(this instanceof Busboy)) { return new Busboy(opts) }
-
-  if (typeof opts !== 'object') {
-    throw new TypeError('Busboy expected an options-Object.')
-  }
-  if (typeof opts.headers !== 'object') {
-    throw new TypeError('Busboy expected an options-Object with headers-attribute.')
-  }
-  if (typeof opts.headers['content-type'] !== 'string') {
-    throw new TypeError('Missing Content-Type-header.')
-  }
-
-  const {
-    headers,
-    ...streamOptions
-  } = opts
-
-  this.opts = {
-    autoDestroy: false,
-    ...streamOptions
-  }
-  WritableStream.call(this, this.opts)
-
-  this._done = false
-  this._parser = this.getParserByHeaders(headers)
-  this._finished = false
-}
-inherits(Busboy, WritableStream)
-
-Busboy.prototype.emit = function (ev) {
-  if (ev === 'finish') {
-    if (!this._done) {
-      this._parser?.end()
-      return
-    } else if (this._finished) {
-      return
-    }
-    this._finished = true
-  }
-  WritableStream.prototype.emit.apply(this, arguments)
-}
-
-Busboy.prototype.getParserByHeaders = function (headers) {
-  const parsed = parseParams(headers['content-type'])
-
-  const cfg = {
-    defCharset: this.opts.defCharset,
-    fileHwm: this.opts.fileHwm,
-    headers,
-    highWaterMark: this.opts.highWaterMark,
-    isPartAFile: this.opts.isPartAFile,
-    limits: this.opts.limits,
-    parsedConType: parsed,
-    preservePath: this.opts.preservePath
-  }
-
-  if (MultipartParser.detect.test(parsed[0])) {
-    return new MultipartParser(this, cfg)
-  }
-  if (UrlencodedParser.detect.test(parsed[0])) {
-    return new UrlencodedParser(this, cfg)
-  }
-  throw new Error('Unsupported Content-Type.')
-}
-
-Busboy.prototype._write = function (chunk, encoding, cb) {
-  this._parser.write(chunk, cb)
-}
-
-module.exports = Busboy
-module.exports["default"] = Busboy
-module.exports.Busboy = Busboy
-
-module.exports.Dicer = Dicer
-
-
-/***/ }),
-
-/***/ 415:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-// TODO:
-//  * support 1 nested multipart level
-//    (see second multipart example here:
-//     http://www.w3.org/TR/html401/interact/forms.html#didx-multipartform-data)
-//  * support limits.fieldNameSize
-//     -- this will require modifications to utils.parseParams
-
-const { Readable } = __nccwpck_require__(4492)
-const { inherits } = __nccwpck_require__(7261)
-
-const Dicer = __nccwpck_require__(2856)
-
-const parseParams = __nccwpck_require__(4426)
-const decodeText = __nccwpck_require__(9136)
-const basename = __nccwpck_require__(496)
-const getLimit = __nccwpck_require__(9692)
-
-const RE_BOUNDARY = /^boundary$/i
-const RE_FIELD = /^form-data$/i
-const RE_CHARSET = /^charset$/i
-const RE_FILENAME = /^filename$/i
-const RE_NAME = /^name$/i
-
-Multipart.detect = /^multipart\/form-data/i
-function Multipart (boy, cfg) {
-  let i
-  let len
-  const self = this
-  let boundary
-  const limits = cfg.limits
-  const isPartAFile = cfg.isPartAFile || ((fieldName, contentType, fileName) => (contentType === 'application/octet-stream' || fileName !== undefined))
-  const parsedConType = cfg.parsedConType || []
-  const defCharset = cfg.defCharset || 'utf8'
-  const preservePath = cfg.preservePath
-  const fileOpts = { highWaterMark: cfg.fileHwm }
-
-  for (i = 0, len = parsedConType.length; i < len; ++i) {
-    if (Array.isArray(parsedConType[i]) &&
-      RE_BOUNDARY.test(parsedConType[i][0])) {
-      boundary = parsedConType[i][1]
-      break
-    }
-  }
-
-  function checkFinished () {
-    if (nends === 0 && finished && !boy._done) {
-      finished = false
-      self.end()
-    }
-  }
-
-  if (typeof boundary !== 'string') { throw new Error('Multipart: Boundary not found') }
-
-  const fieldSizeLimit = getLimit(limits, 'fieldSize', 1 * 1024 * 1024)
-  const fileSizeLimit = getLimit(limits, 'fileSize', Infinity)
-  const filesLimit = getLimit(limits, 'files', Infinity)
-  const fieldsLimit = getLimit(limits, 'fields', Infinity)
-  const partsLimit = getLimit(limits, 'parts', Infinity)
-  const headerPairsLimit = getLimit(limits, 'headerPairs', 2000)
-  const headerSizeLimit = getLimit(limits, 'headerSize', 80 * 1024)
-
-  let nfiles = 0
-  let nfields = 0
-  let nends = 0
-  let curFile
-  let curField
-  let finished = false
-
-  this._needDrain = false
-  this._pause = false
-  this._cb = undefined
-  this._nparts = 0
-  this._boy = boy
-
-  const parserCfg = {
-    boundary,
-    maxHeaderPairs: headerPairsLimit,
-    maxHeaderSize: headerSizeLimit,
-    partHwm: fileOpts.highWaterMark,
-    highWaterMark: cfg.highWaterMark
-  }
-
-  this.parser = new Dicer(parserCfg)
-  this.parser.on('drain', function () {
-    self._needDrain = false
-    if (self._cb && !self._pause) {
-      const cb = self._cb
-      self._cb = undefined
-      cb()
-    }
-  }).on('part', function onPart (part) {
-    if (++self._nparts > partsLimit) {
-      self.parser.removeListener('part', onPart)
-      self.parser.on('part', skipPart)
-      boy.hitPartsLimit = true
-      boy.emit('partsLimit')
-      return skipPart(part)
-    }
-
-    // hack because streams2 _always_ doesn't emit 'end' until nextTick, so let
-    // us emit 'end' early since we know the part has ended if we are already
-    // seeing the next part
-    if (curField) {
-      const field = curField
-      field.emit('end')
-      field.removeAllListeners('end')
-    }
-
-    part.on('header', function (header) {
-      let contype
-      let fieldname
-      let parsed
-      let charset
-      let encoding
-      let filename
-      let nsize = 0
-
-      if (header['content-type']) {
-        parsed = parseParams(header['content-type'][0])
-        if (parsed[0]) {
-          contype = parsed[0].toLowerCase()
-          for (i = 0, len = parsed.length; i < len; ++i) {
-            if (RE_CHARSET.test(parsed[i][0])) {
-              charset = parsed[i][1].toLowerCase()
-              break
-            }
-          }
-        }
-      }
-
-      if (contype === undefined) { contype = 'text/plain' }
-      if (charset === undefined) { charset = defCharset }
-
-      if (header['content-disposition']) {
-        parsed = parseParams(header['content-disposition'][0])
-        if (!RE_FIELD.test(parsed[0])) { return skipPart(part) }
-        for (i = 0, len = parsed.length; i < len; ++i) {
-          if (RE_NAME.test(parsed[i][0])) {
-            fieldname = parsed[i][1]
-          } else if (RE_FILENAME.test(parsed[i][0])) {
-            filename = parsed[i][1]
-            if (!preservePath) { filename = basename(filename) }
-          }
-        }
-      } else { return skipPart(part) }
-
-      if (header['content-transfer-encoding']) { encoding = header['content-transfer-encoding'][0].toLowerCase() } else { encoding = '7bit' }
-
-      let onData,
-        onEnd
-
-      if (isPartAFile(fieldname, contype, filename)) {
-        // file/binary field
-        if (nfiles === filesLimit) {
-          if (!boy.hitFilesLimit) {
-            boy.hitFilesLimit = true
-            boy.emit('filesLimit')
-          }
-          return skipPart(part)
-        }
-
-        ++nfiles
-
-        if (!boy._events.file) {
-          self.parser._ignore()
-          return
-        }
-
-        ++nends
-        const file = new FileStream(fileOpts)
-        curFile = file
-        file.on('end', function () {
-          --nends
-          self._pause = false
-          checkFinished()
-          if (self._cb && !self._needDrain) {
-            const cb = self._cb
-            self._cb = undefined
-            cb()
-          }
-        })
-        file._read = function (n) {
-          if (!self._pause) { return }
-          self._pause = false
-          if (self._cb && !self._needDrain) {
-            const cb = self._cb
-            self._cb = undefined
-            cb()
-          }
-        }
-        boy.emit('file', fieldname, file, filename, encoding, contype)
-
-        onData = function (data) {
-          if ((nsize += data.length) > fileSizeLimit) {
-            const extralen = fileSizeLimit - nsize + data.length
-            if (extralen > 0) { file.push(data.slice(0, extralen)) }
-            file.truncated = true
-            file.bytesRead = fileSizeLimit
-            part.removeAllListeners('data')
-            file.emit('limit')
-            return
-          } else if (!file.push(data)) { self._pause = true }
-
-          file.bytesRead = nsize
-        }
-
-        onEnd = function () {
-          curFile = undefined
-          file.push(null)
-        }
-      } else {
-        // non-file field
-        if (nfields === fieldsLimit) {
-          if (!boy.hitFieldsLimit) {
-            boy.hitFieldsLimit = true
-            boy.emit('fieldsLimit')
-          }
-          return skipPart(part)
-        }
-
-        ++nfields
-        ++nends
-        let buffer = ''
-        let truncated = false
-        curField = part
-
-        onData = function (data) {
-          if ((nsize += data.length) > fieldSizeLimit) {
-            const extralen = (fieldSizeLimit - (nsize - data.length))
-            buffer += data.toString('binary', 0, extralen)
-            truncated = true
-            part.removeAllListeners('data')
-          } else { buffer += data.toString('binary') }
-        }
-
-        onEnd = function () {
-          curField = undefined
-          if (buffer.length) { buffer = decodeText(buffer, 'binary', charset) }
-          boy.emit('field', fieldname, buffer, false, truncated, encoding, contype)
-          --nends
-          checkFinished()
-        }
-      }
-
-      /* As of node@2efe4ab761666 (v0.10.29+/v0.11.14+), busboy had become
-         broken. Streams2/streams3 is a huge black box of confusion, but
-         somehow overriding the sync state seems to fix things again (and still
-         seems to work for previous node versions).
-      */
-      part._readableState.sync = false
-
-      part.on('data', onData)
-      part.on('end', onEnd)
-    }).on('error', function (err) {
-      if (curFile) { curFile.emit('error', err) }
-    })
-  }).on('error', function (err) {
-    boy.emit('error', err)
-  }).on('finish', function () {
-    finished = true
-    checkFinished()
-  })
-}
-
-Multipart.prototype.write = function (chunk, cb) {
-  const r = this.parser.write(chunk)
-  if (r && !this._pause) {
-    cb()
-  } else {
-    this._needDrain = !r
-    this._cb = cb
-  }
-}
-
-Multipart.prototype.end = function () {
-  const self = this
-
-  if (self.parser.writable) {
-    self.parser.end()
-  } else if (!self._boy._done) {
-    process.nextTick(function () {
-      self._boy._done = true
-      self._boy.emit('finish')
-    })
-  }
-}
-
-function skipPart (part) {
-  part.resume()
-}
-
-function FileStream (opts) {
-  Readable.call(this, opts)
-
-  this.bytesRead = 0
-
-  this.truncated = false
-}
-
-inherits(FileStream, Readable)
-
-FileStream.prototype._read = function (n) {}
-
-module.exports = Multipart
-
-
-/***/ }),
-
-/***/ 6780:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-const Decoder = __nccwpck_require__(9730)
-const decodeText = __nccwpck_require__(9136)
-const getLimit = __nccwpck_require__(9692)
-
-const RE_CHARSET = /^charset$/i
-
-UrlEncoded.detect = /^application\/x-www-form-urlencoded/i
-function UrlEncoded (boy, cfg) {
-  const limits = cfg.limits
-  const parsedConType = cfg.parsedConType
-  this.boy = boy
-
-  this.fieldSizeLimit = getLimit(limits, 'fieldSize', 1 * 1024 * 1024)
-  this.fieldNameSizeLimit = getLimit(limits, 'fieldNameSize', 100)
-  this.fieldsLimit = getLimit(limits, 'fields', Infinity)
-
-  let charset
-  for (var i = 0, len = parsedConType.length; i < len; ++i) { // eslint-disable-line no-var
-    if (Array.isArray(parsedConType[i]) &&
-        RE_CHARSET.test(parsedConType[i][0])) {
-      charset = parsedConType[i][1].toLowerCase()
-      break
-    }
-  }
-
-  if (charset === undefined) { charset = cfg.defCharset || 'utf8' }
-
-  this.decoder = new Decoder()
-  this.charset = charset
-  this._fields = 0
-  this._state = 'key'
-  this._checkingBytes = true
-  this._bytesKey = 0
-  this._bytesVal = 0
-  this._key = ''
-  this._val = ''
-  this._keyTrunc = false
-  this._valTrunc = false
-  this._hitLimit = false
-}
-
-UrlEncoded.prototype.write = function (data, cb) {
-  if (this._fields === this.fieldsLimit) {
-    if (!this.boy.hitFieldsLimit) {
-      this.boy.hitFieldsLimit = true
-      this.boy.emit('fieldsLimit')
-    }
-    return cb()
-  }
-
-  let idxeq; let idxamp; let i; let p = 0; const len = data.length
-
-  while (p < len) {
-    if (this._state === 'key') {
-      idxeq = idxamp = undefined
-      for (i = p; i < len; ++i) {
-        if (!this._checkingBytes) { ++p }
-        if (data[i] === 0x3D/* = */) {
-          idxeq = i
-          break
-        } else if (data[i] === 0x26/* & */) {
-          idxamp = i
-          break
-        }
-        if (this._checkingBytes && this._bytesKey === this.fieldNameSizeLimit) {
-          this._hitLimit = true
-          break
-        } else if (this._checkingBytes) { ++this._bytesKey }
-      }
-
-      if (idxeq !== undefined) {
-        // key with assignment
-        if (idxeq > p) { this._key += this.decoder.write(data.toString('binary', p, idxeq)) }
-        this._state = 'val'
-
-        this._hitLimit = false
-        this._checkingBytes = true
-        this._val = ''
-        this._bytesVal = 0
-        this._valTrunc = false
-        this.decoder.reset()
-
-        p = idxeq + 1
-      } else if (idxamp !== undefined) {
-        // key with no assignment
-        ++this._fields
-        let key; const keyTrunc = this._keyTrunc
-        if (idxamp > p) { key = (this._key += this.decoder.write(data.toString('binary', p, idxamp))) } else { key = this._key }
-
-        this._hitLimit = false
-        this._checkingBytes = true
-        this._key = ''
-        this._bytesKey = 0
-        this._keyTrunc = false
-        this.decoder.reset()
-
-        if (key.length) {
-          this.boy.emit('field', decodeText(key, 'binary', this.charset),
-            '',
-            keyTrunc,
-            false)
-        }
-
-        p = idxamp + 1
-        if (this._fields === this.fieldsLimit) { return cb() }
-      } else if (this._hitLimit) {
-        // we may not have hit the actual limit if there are encoded bytes...
-        if (i > p) { this._key += this.decoder.write(data.toString('binary', p, i)) }
-        p = i
-        if ((this._bytesKey = this._key.length) === this.fieldNameSizeLimit) {
-          // yep, we actually did hit the limit
-          this._checkingBytes = false
-          this._keyTrunc = true
-        }
-      } else {
-        if (p < len) { this._key += this.decoder.write(data.toString('binary', p)) }
-        p = len
+        const auth = (0, import_auth_token.createTokenAuth)(options.auth);
+        hook.wrap("request", auth.hook);
+        this.auth = auth;
       }
     } else {
-      idxamp = undefined
-      for (i = p; i < len; ++i) {
-        if (!this._checkingBytes) { ++p }
-        if (data[i] === 0x26/* & */) {
-          idxamp = i
-          break
-        }
-        if (this._checkingBytes && this._bytesVal === this.fieldSizeLimit) {
-          this._hitLimit = true
-          break
-        } else if (this._checkingBytes) { ++this._bytesVal }
-      }
-
-      if (idxamp !== undefined) {
-        ++this._fields
-        if (idxamp > p) { this._val += this.decoder.write(data.toString('binary', p, idxamp)) }
-        this.boy.emit('field', decodeText(this._key, 'binary', this.charset),
-          decodeText(this._val, 'binary', this.charset),
-          this._keyTrunc,
-          this._valTrunc)
-        this._state = 'key'
-
-        this._hitLimit = false
-        this._checkingBytes = true
-        this._key = ''
-        this._bytesKey = 0
-        this._keyTrunc = false
-        this.decoder.reset()
-
-        p = idxamp + 1
-        if (this._fields === this.fieldsLimit) { return cb() }
-      } else if (this._hitLimit) {
-        // we may not have hit the actual limit if there are encoded bytes...
-        if (i > p) { this._val += this.decoder.write(data.toString('binary', p, i)) }
-        p = i
-        if ((this._val === '' && this.fieldSizeLimit === 0) ||
-            (this._bytesVal = this._val.length) === this.fieldSizeLimit) {
-          // yep, we actually did hit the limit
-          this._checkingBytes = false
-          this._valTrunc = true
-        }
-      } else {
-        if (p < len) { this._val += this.decoder.write(data.toString('binary', p)) }
-        p = len
-      }
+      const { authStrategy, ...otherOptions } = options;
+      const auth = authStrategy(
+        Object.assign(
+          {
+            request: this.request,
+            log: this.log,
+            // we pass the current octokit instance as well as its constructor options
+            // to allow for authentication strategies that return a new octokit instance
+            // that shares the same internal state as the current one. The original
+            // requirement for this was the "event-octokit" authentication strategy
+            // of https://github.com/probot/octokit-auth-probot.
+            octokit: this,
+            octokitOptions: otherOptions
+          },
+          options.auth
+        )
+      );
+      hook.wrap("request", auth.hook);
+      this.auth = auth;
+    }
+    const classConstructor = this.constructor;
+    for (let i = 0; i < classConstructor.plugins.length; ++i) {
+      Object.assign(this, classConstructor.plugins[i](this, options));
     }
   }
-  cb()
-}
-
-UrlEncoded.prototype.end = function () {
-  if (this.boy._done) { return }
-
-  if (this._state === 'key' && this._key.length > 0) {
-    this.boy.emit('field', decodeText(this._key, 'binary', this.charset),
-      '',
-      this._keyTrunc,
-      false)
-  } else if (this._state === 'val') {
-    this.boy.emit('field', decodeText(this._key, 'binary', this.charset),
-      decodeText(this._val, 'binary', this.charset),
-      this._keyTrunc,
-      this._valTrunc)
-  }
-  this.boy._done = true
-  this.boy.emit('finish')
-}
-
-module.exports = UrlEncoded
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (0);
 
 
 /***/ }),
 
-/***/ 9730:
-/***/ ((module) => {
-
-"use strict";
-
-
-const RE_PLUS = /\+/g
-
-const HEX = [
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
-  0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-]
-
-function Decoder () {
-  this.buffer = undefined
-}
-Decoder.prototype.write = function (str) {
-  // Replace '+' with ' ' before decoding
-  str = str.replace(RE_PLUS, ' ')
-  let res = ''
-  let i = 0; let p = 0; const len = str.length
-  for (; i < len; ++i) {
-    if (this.buffer !== undefined) {
-      if (!HEX[str.charCodeAt(i)]) {
-        res += '%' + this.buffer
-        this.buffer = undefined
-        --i // retry character
-      } else {
-        this.buffer += str[i]
-        ++p
-        if (this.buffer.length === 2) {
-          res += String.fromCharCode(parseInt(this.buffer, 16))
-          this.buffer = undefined
-        }
-      }
-    } else if (str[i] === '%') {
-      if (i > p) {
-        res += str.substring(p, i)
-        p = i
-      }
-      this.buffer = ''
-      ++p
-    }
-  }
-  if (p < len && this.buffer === undefined) { res += str.substring(p) }
-  return res
-}
-Decoder.prototype.reset = function () {
-  this.buffer = undefined
-}
-
-module.exports = Decoder
-
-
-/***/ }),
-
-/***/ 496:
-/***/ ((module) => {
-
-"use strict";
-
-
-module.exports = function basename (path) {
-  if (typeof path !== 'string') { return '' }
-  for (var i = path.length - 1; i >= 0; --i) { // eslint-disable-line no-var
-    switch (path.charCodeAt(i)) {
-      case 0x2F: // '/'
-      case 0x5C: // '\'
-        path = path.slice(i + 1)
-        return (path === '..' || path === '.' ? '' : path)
-    }
-  }
-  return (path === '..' || path === '.' ? '' : path)
-}
-
-
-/***/ }),
-
-/***/ 9136:
-/***/ ((module) => {
-
-"use strict";
-
-
-// Node has always utf-8
-const utf8Decoder = new TextDecoder('utf-8')
-const textDecoders = new Map([
-  ['utf-8', utf8Decoder],
-  ['utf8', utf8Decoder]
-])
-
-function decodeText (text, textEncoding, destEncoding) {
-  if (text) {
-    if (textDecoders.has(destEncoding)) {
-      try {
-        return textDecoders.get(destEncoding).decode(Buffer.from(text, textEncoding))
-      } catch (e) { }
-    } else {
-      try {
-        textDecoders.set(destEncoding, new TextDecoder(destEncoding))
-        return textDecoders.get(destEncoding).decode(Buffer.from(text, textEncoding))
-      } catch (e) { }
-    }
-  }
-  return text
-}
-
-module.exports = decodeText
-
-
-/***/ }),
-
-/***/ 9692:
-/***/ ((module) => {
-
-"use strict";
-
-
-module.exports = function getLimit (limits, name, defaultLimit) {
-  if (
-    !limits ||
-    limits[name] === undefined ||
-    limits[name] === null
-  ) { return defaultLimit }
-
-  if (
-    typeof limits[name] !== 'number' ||
-    isNaN(limits[name])
-  ) { throw new TypeError('Limit ' + name + ' is not a valid number') }
-
-  return limits[name]
-}
-
-
-/***/ }),
-
-/***/ 4426:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-
-const decodeText = __nccwpck_require__(9136)
-
-const RE_ENCODED = /%([a-fA-F0-9]{2})/g
-
-function encodedReplacer (match, byte) {
-  return String.fromCharCode(parseInt(byte, 16))
-}
-
-function parseParams (str) {
-  const res = []
-  let state = 'key'
-  let charset = ''
-  let inquote = false
-  let escaping = false
-  let p = 0
-  let tmp = ''
-
-  for (var i = 0, len = str.length; i < len; ++i) { // eslint-disable-line no-var
-    const char = str[i]
-    if (char === '\\' && inquote) {
-      if (escaping) { escaping = false } else {
-        escaping = true
-        continue
-      }
-    } else if (char === '"') {
-      if (!escaping) {
-        if (inquote) {
-          inquote = false
-          state = 'key'
-        } else { inquote = true }
-        continue
-      } else { escaping = false }
-    } else {
-      if (escaping && inquote) { tmp += '\\' }
-      escaping = false
-      if ((state === 'charset' || state === 'lang') && char === "'") {
-        if (state === 'charset') {
-          state = 'lang'
-          charset = tmp.substring(1)
-        } else { state = 'value' }
-        tmp = ''
-        continue
-      } else if (state === 'key' &&
-        (char === '*' || char === '=') &&
-        res.length) {
-        if (char === '*') { state = 'charset' } else { state = 'value' }
-        res[p] = [tmp, undefined]
-        tmp = ''
-        continue
-      } else if (!inquote && char === ';') {
-        state = 'key'
-        if (charset) {
-          if (tmp.length) {
-            tmp = decodeText(tmp.replace(RE_ENCODED, encodedReplacer),
-              'binary',
-              charset)
-          }
-          charset = ''
-        } else if (tmp.length) {
-          tmp = decodeText(tmp, 'binary', 'utf8')
-        }
-        if (res[p] === undefined) { res[p] = tmp } else { res[p][1] = tmp }
-        tmp = ''
-        ++p
-        continue
-      } else if (!inquote && (char === ' ' || char === '\t')) { continue }
-    }
-    tmp += char
-  }
-  if (charset && tmp.length) {
-    tmp = decodeText(tmp.replace(RE_ENCODED, encodedReplacer),
-      'binary',
-      charset)
-  } else if (tmp) {
-    tmp = decodeText(tmp, 'binary', 'utf8')
-  }
-
-  if (res[p] === undefined) {
-    if (tmp) { res[p] = tmp }
-  } else { res[p][1] = tmp }
-
-  return res
-}
-
-module.exports = parseParams
-
-
-/***/ }),
-
-/***/ 334:
+/***/ 5542:
 /***/ ((module) => {
 
 "use strict";
@@ -5806,175 +4549,6 @@ var createTokenAuth = function createTokenAuth2(token) {
 
 /***/ }),
 
-/***/ 6762:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
-var __getOwnPropNames = Object.getOwnPropertyNames;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
-};
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-
-// pkg/dist-src/index.js
-var dist_src_exports = {};
-__export(dist_src_exports, {
-  Octokit: () => Octokit
-});
-module.exports = __toCommonJS(dist_src_exports);
-var import_universal_user_agent = __nccwpck_require__(5030);
-var import_before_after_hook = __nccwpck_require__(3682);
-var import_request = __nccwpck_require__(6234);
-var import_graphql = __nccwpck_require__(8467);
-var import_auth_token = __nccwpck_require__(334);
-
-// pkg/dist-src/version.js
-var VERSION = "5.0.1";
-
-// pkg/dist-src/index.js
-var Octokit = class {
-  static {
-    this.VERSION = VERSION;
-  }
-  static defaults(defaults) {
-    const OctokitWithDefaults = class extends this {
-      constructor(...args) {
-        const options = args[0] || {};
-        if (typeof defaults === "function") {
-          super(defaults(options));
-          return;
-        }
-        super(
-          Object.assign(
-            {},
-            defaults,
-            options,
-            options.userAgent && defaults.userAgent ? {
-              userAgent: `${options.userAgent} ${defaults.userAgent}`
-            } : null
-          )
-        );
-      }
-    };
-    return OctokitWithDefaults;
-  }
-  static {
-    this.plugins = [];
-  }
-  /**
-   * Attach a plugin (or many) to your Octokit instance.
-   *
-   * @example
-   * const API = Octokit.plugin(plugin1, plugin2, plugin3, ...)
-   */
-  static plugin(...newPlugins) {
-    const currentPlugins = this.plugins;
-    const NewOctokit = class extends this {
-      static {
-        this.plugins = currentPlugins.concat(
-          newPlugins.filter((plugin) => !currentPlugins.includes(plugin))
-        );
-      }
-    };
-    return NewOctokit;
-  }
-  constructor(options = {}) {
-    const hook = new import_before_after_hook.Collection();
-    const requestDefaults = {
-      baseUrl: import_request.request.endpoint.DEFAULTS.baseUrl,
-      headers: {},
-      request: Object.assign({}, options.request, {
-        // @ts-ignore internal usage only, no need to type
-        hook: hook.bind(null, "request")
-      }),
-      mediaType: {
-        previews: [],
-        format: ""
-      }
-    };
-    requestDefaults.headers["user-agent"] = [
-      options.userAgent,
-      `octokit-core.js/${VERSION} ${(0, import_universal_user_agent.getUserAgent)()}`
-    ].filter(Boolean).join(" ");
-    if (options.baseUrl) {
-      requestDefaults.baseUrl = options.baseUrl;
-    }
-    if (options.previews) {
-      requestDefaults.mediaType.previews = options.previews;
-    }
-    if (options.timeZone) {
-      requestDefaults.headers["time-zone"] = options.timeZone;
-    }
-    this.request = import_request.request.defaults(requestDefaults);
-    this.graphql = (0, import_graphql.withCustomRequest)(this.request).defaults(requestDefaults);
-    this.log = Object.assign(
-      {
-        debug: () => {
-        },
-        info: () => {
-        },
-        warn: console.warn.bind(console),
-        error: console.error.bind(console)
-      },
-      options.log
-    );
-    this.hook = hook;
-    if (!options.authStrategy) {
-      if (!options.auth) {
-        this.auth = async () => ({
-          type: "unauthenticated"
-        });
-      } else {
-        const auth = (0, import_auth_token.createTokenAuth)(options.auth);
-        hook.wrap("request", auth.hook);
-        this.auth = auth;
-      }
-    } else {
-      const { authStrategy, ...otherOptions } = options;
-      const auth = authStrategy(
-        Object.assign(
-          {
-            request: this.request,
-            log: this.log,
-            // we pass the current octokit instance as well as its constructor options
-            // to allow for authentication strategies that return a new octokit instance
-            // that shares the same internal state as the current one. The original
-            // requirement for this was the "event-octokit" authentication strategy
-            // of https://github.com/probot/octokit-auth-probot.
-            octokit: this,
-            octokitOptions: otherOptions
-          },
-          options.auth
-        )
-      );
-      hook.wrap("request", auth.hook);
-      this.auth = auth;
-    }
-    const classConstructor = this.constructor;
-    classConstructor.plugins.forEach((plugin) => {
-      Object.assign(this, plugin(this, options));
-    });
-  }
-};
-// Annotate the CommonJS export names for ESM import in node:
-0 && (0);
-
-
-/***/ }),
-
 /***/ 9440:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
@@ -6009,7 +4583,7 @@ module.exports = __toCommonJS(dist_src_exports);
 var import_universal_user_agent = __nccwpck_require__(5030);
 
 // pkg/dist-src/version.js
-var VERSION = "9.0.2";
+var VERSION = "9.0.5";
 
 // pkg/dist-src/defaults.js
 var userAgent = `octokit-endpoint.js/${VERSION} ${(0, import_universal_user_agent.getUserAgent)()}`;
@@ -6036,12 +4610,24 @@ function lowercaseKeys(object) {
   }, {});
 }
 
+// pkg/dist-src/util/is-plain-object.js
+function isPlainObject(value) {
+  if (typeof value !== "object" || value === null)
+    return false;
+  if (Object.prototype.toString.call(value) !== "[object Object]")
+    return false;
+  const proto = Object.getPrototypeOf(value);
+  if (proto === null)
+    return true;
+  const Ctor = Object.prototype.hasOwnProperty.call(proto, "constructor") && proto.constructor;
+  return typeof Ctor === "function" && Ctor instanceof Ctor && Function.prototype.call(Ctor) === Function.prototype.call(value);
+}
+
 // pkg/dist-src/util/merge-deep.js
-var import_is_plain_object = __nccwpck_require__(3287);
 function mergeDeep(defaults, options) {
   const result = Object.assign({}, defaults);
   Object.keys(options).forEach((key) => {
-    if ((0, import_is_plain_object.isPlainObject)(options[key])) {
+    if (isPlainObject(options[key])) {
       if (!(key in defaults))
         Object.assign(result, { [key]: options[key] });
       else
@@ -6116,10 +4702,13 @@ function extractUrlVariableNames(url) {
 
 // pkg/dist-src/util/omit.js
 function omit(object, keysToOmit) {
-  return Object.keys(object).filter((option) => !keysToOmit.includes(option)).reduce((obj, key) => {
-    obj[key] = object[key];
-    return obj;
-  }, {});
+  const result = { __proto__: null };
+  for (const key of Object.keys(object)) {
+    if (keysToOmit.indexOf(key) === -1) {
+      result[key] = object[key];
+    }
+  }
+  return result;
 }
 
 // pkg/dist-src/util/url-template.js
@@ -6379,7 +4968,7 @@ var import_request3 = __nccwpck_require__(6234);
 var import_universal_user_agent = __nccwpck_require__(5030);
 
 // pkg/dist-src/version.js
-var VERSION = "7.0.2";
+var VERSION = "7.1.0";
 
 // pkg/dist-src/with-defaults.js
 var import_request2 = __nccwpck_require__(6234);
@@ -6536,7 +5125,7 @@ __export(dist_src_exports, {
 module.exports = __toCommonJS(dist_src_exports);
 
 // pkg/dist-src/version.js
-var VERSION = "9.1.4";
+var VERSION = "9.2.1";
 
 // pkg/dist-src/normalize-paginated-list-response.js
 function normalizePaginatedListResponse(response) {
@@ -6697,6 +5286,8 @@ var paginatingEndpoints = [
   "GET /orgs/{org}/members/{username}/codespaces",
   "GET /orgs/{org}/migrations",
   "GET /orgs/{org}/migrations/{migration_id}/repositories",
+  "GET /orgs/{org}/organization-roles/{role_id}/teams",
+  "GET /orgs/{org}/organization-roles/{role_id}/users",
   "GET /orgs/{org}/outside_collaborators",
   "GET /orgs/{org}/packages",
   "GET /orgs/{org}/packages/{package_type}/{package_name}/versions",
@@ -6933,7 +5524,7 @@ __export(dist_src_exports, {
 module.exports = __toCommonJS(dist_src_exports);
 
 // pkg/dist-src/version.js
-var VERSION = "10.1.4";
+var VERSION = "10.4.1";
 
 // pkg/dist-src/generated/endpoints.js
 var Endpoints = {
@@ -7060,6 +5651,9 @@ var Endpoints = {
       "GET /repos/{owner}/{repo}/actions/permissions/selected-actions"
     ],
     getArtifact: ["GET /repos/{owner}/{repo}/actions/artifacts/{artifact_id}"],
+    getCustomOidcSubClaimForRepo: [
+      "GET /repos/{owner}/{repo}/actions/oidc/customization/sub"
+    ],
     getEnvironmentPublicKey: [
       "GET /repositories/{repository_id}/environments/{environment_name}/secrets/public-key"
     ],
@@ -7212,6 +5806,9 @@ var Endpoints = {
     setCustomLabelsForSelfHostedRunnerForRepo: [
       "PUT /repos/{owner}/{repo}/actions/runners/{runner_id}/labels"
     ],
+    setCustomOidcSubClaimForRepo: [
+      "PUT /repos/{owner}/{repo}/actions/oidc/customization/sub"
+    ],
     setGithubActionsDefaultWorkflowPermissionsOrganization: [
       "PUT /orgs/{org}/actions/permissions/workflow"
     ],
@@ -7281,6 +5878,7 @@ var Endpoints = {
     listWatchersForRepo: ["GET /repos/{owner}/{repo}/subscribers"],
     markNotificationsAsRead: ["PUT /notifications"],
     markRepoNotificationsAsRead: ["PUT /repos/{owner}/{repo}/notifications"],
+    markThreadAsDone: ["DELETE /notifications/threads/{thread_id}"],
     markThreadAsRead: ["PATCH /notifications/threads/{thread_id}"],
     setRepoSubscription: ["PUT /repos/{owner}/{repo}/subscription"],
     setThreadSubscription: [
@@ -7557,10 +6155,10 @@ var Endpoints = {
     updateForAuthenticatedUser: ["PATCH /user/codespaces/{codespace_name}"]
   },
   copilot: {
-    addCopilotForBusinessSeatsForTeams: [
+    addCopilotSeatsForTeams: [
       "POST /orgs/{org}/copilot/billing/selected_teams"
     ],
-    addCopilotForBusinessSeatsForUsers: [
+    addCopilotSeatsForUsers: [
       "POST /orgs/{org}/copilot/billing/selected_users"
     ],
     cancelCopilotSeatAssignmentForTeams: [
@@ -7873,9 +6471,23 @@ var Endpoints = {
       }
     ]
   },
+  oidc: {
+    getOidcCustomSubTemplateForOrg: [
+      "GET /orgs/{org}/actions/oidc/customization/sub"
+    ],
+    updateOidcCustomSubTemplateForOrg: [
+      "PUT /orgs/{org}/actions/oidc/customization/sub"
+    ]
+  },
   orgs: {
     addSecurityManagerTeam: [
       "PUT /orgs/{org}/security-managers/teams/{team_slug}"
+    ],
+    assignTeamToOrgRole: [
+      "PUT /orgs/{org}/organization-roles/teams/{team_slug}/{role_id}"
+    ],
+    assignUserToOrgRole: [
+      "PUT /orgs/{org}/organization-roles/users/{username}/{role_id}"
     ],
     blockUser: ["PUT /orgs/{org}/blocks/{username}"],
     cancelInvitation: ["DELETE /orgs/{org}/invitations/{invitation_id}"],
@@ -7885,6 +6497,7 @@ var Endpoints = {
     convertMemberToOutsideCollaborator: [
       "PUT /orgs/{org}/outside_collaborators/{username}"
     ],
+    createCustomOrganizationRole: ["POST /orgs/{org}/organization-roles"],
     createInvitation: ["POST /orgs/{org}/invitations"],
     createOrUpdateCustomProperties: ["PATCH /orgs/{org}/properties/schema"],
     createOrUpdateCustomPropertiesValuesForRepos: [
@@ -7895,6 +6508,9 @@ var Endpoints = {
     ],
     createWebhook: ["POST /orgs/{org}/hooks"],
     delete: ["DELETE /orgs/{org}"],
+    deleteCustomOrganizationRole: [
+      "DELETE /orgs/{org}/organization-roles/{role_id}"
+    ],
     deleteWebhook: ["DELETE /orgs/{org}/hooks/{hook_id}"],
     enableOrDisableSecurityProductOnAllOrgRepos: [
       "POST /orgs/{org}/{security_product}/{enablement}"
@@ -7906,6 +6522,7 @@ var Endpoints = {
     ],
     getMembershipForAuthenticatedUser: ["GET /user/memberships/orgs/{org}"],
     getMembershipForUser: ["GET /orgs/{org}/memberships/{username}"],
+    getOrgRole: ["GET /orgs/{org}/organization-roles/{role_id}"],
     getWebhook: ["GET /orgs/{org}/hooks/{hook_id}"],
     getWebhookConfigForOrg: ["GET /orgs/{org}/hooks/{hook_id}/config"],
     getWebhookDelivery: [
@@ -7921,6 +6538,12 @@ var Endpoints = {
     listInvitationTeams: ["GET /orgs/{org}/invitations/{invitation_id}/teams"],
     listMembers: ["GET /orgs/{org}/members"],
     listMembershipsForAuthenticatedUser: ["GET /user/memberships/orgs"],
+    listOrgRoleTeams: ["GET /orgs/{org}/organization-roles/{role_id}/teams"],
+    listOrgRoleUsers: ["GET /orgs/{org}/organization-roles/{role_id}/users"],
+    listOrgRoles: ["GET /orgs/{org}/organization-roles"],
+    listOrganizationFineGrainedPermissions: [
+      "GET /orgs/{org}/organization-fine-grained-permissions"
+    ],
     listOutsideCollaborators: ["GET /orgs/{org}/outside_collaborators"],
     listPatGrantRepositories: [
       "GET /orgs/{org}/personal-access-tokens/{pat_id}/repositories"
@@ -7935,6 +6558,9 @@ var Endpoints = {
     listSecurityManagerTeams: ["GET /orgs/{org}/security-managers"],
     listWebhookDeliveries: ["GET /orgs/{org}/hooks/{hook_id}/deliveries"],
     listWebhooks: ["GET /orgs/{org}/hooks"],
+    patchCustomOrganizationRole: [
+      "PATCH /orgs/{org}/organization-roles/{role_id}"
+    ],
     pingWebhook: ["POST /orgs/{org}/hooks/{hook_id}/pings"],
     redeliverWebhookDelivery: [
       "POST /orgs/{org}/hooks/{hook_id}/deliveries/{delivery_id}/attempts"
@@ -7958,6 +6584,18 @@ var Endpoints = {
     ],
     reviewPatGrantRequestsInBulk: [
       "POST /orgs/{org}/personal-access-token-requests"
+    ],
+    revokeAllOrgRolesTeam: [
+      "DELETE /orgs/{org}/organization-roles/teams/{team_slug}"
+    ],
+    revokeAllOrgRolesUser: [
+      "DELETE /orgs/{org}/organization-roles/users/{username}"
+    ],
+    revokeOrgRoleTeam: [
+      "DELETE /orgs/{org}/organization-roles/teams/{team_slug}/{role_id}"
+    ],
+    revokeOrgRoleUser: [
+      "DELETE /orgs/{org}/organization-roles/users/{username}/{role_id}"
     ],
     setMembershipForUser: ["PUT /orgs/{org}/memberships/{username}"],
     setPublicMembershipForAuthenticatedUser: [
@@ -8249,6 +6887,9 @@ var Endpoints = {
       {},
       { mapToData: "users" }
     ],
+    cancelPagesDeployment: [
+      "POST /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}/cancel"
+    ],
     checkAutomatedSecurityFixes: [
       "GET /repos/{owner}/{repo}/automated-security-fixes"
     ],
@@ -8284,12 +6925,15 @@ var Endpoints = {
     createForAuthenticatedUser: ["POST /user/repos"],
     createFork: ["POST /repos/{owner}/{repo}/forks"],
     createInOrg: ["POST /orgs/{org}/repos"],
+    createOrUpdateCustomPropertiesValues: [
+      "PATCH /repos/{owner}/{repo}/properties/values"
+    ],
     createOrUpdateEnvironment: [
       "PUT /repos/{owner}/{repo}/environments/{environment_name}"
     ],
     createOrUpdateFileContents: ["PUT /repos/{owner}/{repo}/contents/{path}"],
     createOrgRuleset: ["POST /orgs/{org}/rulesets"],
-    createPagesDeployment: ["POST /repos/{owner}/{repo}/pages/deployment"],
+    createPagesDeployment: ["POST /repos/{owner}/{repo}/pages/deployments"],
     createPagesSite: ["POST /repos/{owner}/{repo}/pages"],
     createRelease: ["POST /repos/{owner}/{repo}/releases"],
     createRepoRuleset: ["POST /repos/{owner}/{repo}/rulesets"],
@@ -8442,6 +7086,9 @@ var Endpoints = {
     getOrgRulesets: ["GET /orgs/{org}/rulesets"],
     getPages: ["GET /repos/{owner}/{repo}/pages"],
     getPagesBuild: ["GET /repos/{owner}/{repo}/pages/builds/{build_id}"],
+    getPagesDeployment: [
+      "GET /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}"
+    ],
     getPagesHealthCheck: ["GET /repos/{owner}/{repo}/pages/health"],
     getParticipationStats: ["GET /repos/{owner}/{repo}/stats/participation"],
     getPullRequestReviewProtection: [
@@ -8652,6 +7299,9 @@ var Endpoints = {
     ]
   },
   securityAdvisories: {
+    createFork: [
+      "POST /repos/{owner}/{repo}/security-advisories/{ghsa_id}/forks"
+    ],
     createPrivateVulnerabilityReport: [
       "POST /repos/{owner}/{repo}/security-advisories/reports"
     ],
@@ -9143,10 +7793,22 @@ var import_endpoint = __nccwpck_require__(9440);
 var import_universal_user_agent = __nccwpck_require__(5030);
 
 // pkg/dist-src/version.js
-var VERSION = "8.1.5";
+var VERSION = "8.4.0";
+
+// pkg/dist-src/is-plain-object.js
+function isPlainObject(value) {
+  if (typeof value !== "object" || value === null)
+    return false;
+  if (Object.prototype.toString.call(value) !== "[object Object]")
+    return false;
+  const proto = Object.getPrototypeOf(value);
+  if (proto === null)
+    return true;
+  const Ctor = Object.prototype.hasOwnProperty.call(proto, "constructor") && proto.constructor;
+  return typeof Ctor === "function" && Ctor instanceof Ctor && Function.prototype.call(Ctor) === Function.prototype.call(value);
+}
 
 // pkg/dist-src/fetch-wrapper.js
-var import_is_plain_object = __nccwpck_require__(3287);
 var import_request_error = __nccwpck_require__(537);
 
 // pkg/dist-src/get-buffer-response.js
@@ -9156,10 +7818,10 @@ function getBufferResponse(response) {
 
 // pkg/dist-src/fetch-wrapper.js
 function fetchWrapper(requestOptions) {
-  var _a, _b, _c;
+  var _a, _b, _c, _d;
   const log = requestOptions.request && requestOptions.request.log ? requestOptions.request.log : console;
   const parseSuccessResponseBody = ((_a = requestOptions.request) == null ? void 0 : _a.parseSuccessResponseBody) !== false;
-  if ((0, import_is_plain_object.isPlainObject)(requestOptions.body) || Array.isArray(requestOptions.body)) {
+  if (isPlainObject(requestOptions.body) || Array.isArray(requestOptions.body)) {
     requestOptions.body = JSON.stringify(requestOptions.body);
   }
   let headers = {};
@@ -9177,8 +7839,9 @@ function fetchWrapper(requestOptions) {
   return fetch(requestOptions.url, {
     method: requestOptions.method,
     body: requestOptions.body,
+    redirect: (_c = requestOptions.request) == null ? void 0 : _c.redirect,
     headers: requestOptions.headers,
-    signal: (_c = requestOptions.request) == null ? void 0 : _c.signal,
+    signal: (_d = requestOptions.request) == null ? void 0 : _d.signal,
     // duplex must be set if request.body is ReadableStream or Async Iterables.
     // See https://fetch.spec.whatwg.org/#dom-requestinit-duplex.
     ...requestOptions.body && { duplex: "half" }
@@ -9275,11 +7938,17 @@ async function getResponseData(response) {
 function toErrorMessage(data) {
   if (typeof data === "string")
     return data;
+  let suffix;
+  if ("documentation_url" in data) {
+    suffix = ` - ${data.documentation_url}`;
+  } else {
+    suffix = "";
+  }
   if ("message" in data) {
     if (Array.isArray(data.errors)) {
-      return `${data.message}: ${data.errors.map(JSON.stringify).join(", ")}`;
+      return `${data.message}: ${data.errors.map(JSON.stringify).join(", ")}${suffix}`;
     }
-    return data.message;
+    return `${data.message}${suffix}`;
   }
   return `Unknown error: ${JSON.stringify(data)}`;
 }
@@ -9732,135 +8401,6 @@ class Deprecation extends Error {
 }
 
 exports.Deprecation = Deprecation;
-
-
-/***/ }),
-
-/***/ 1585:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-const {PassThrough: PassThroughStream} = __nccwpck_require__(2781);
-
-module.exports = options => {
-	options = {...options};
-
-	const {array} = options;
-	let {encoding} = options;
-	const isBuffer = encoding === 'buffer';
-	let objectMode = false;
-
-	if (array) {
-		objectMode = !(encoding || isBuffer);
-	} else {
-		encoding = encoding || 'utf8';
-	}
-
-	if (isBuffer) {
-		encoding = null;
-	}
-
-	const stream = new PassThroughStream({objectMode});
-
-	if (encoding) {
-		stream.setEncoding(encoding);
-	}
-
-	let length = 0;
-	const chunks = [];
-
-	stream.on('data', chunk => {
-		chunks.push(chunk);
-
-		if (objectMode) {
-			length = chunks.length;
-		} else {
-			length += chunk.length;
-		}
-	});
-
-	stream.getBufferedValue = () => {
-		if (array) {
-			return chunks;
-		}
-
-		return isBuffer ? Buffer.concat(chunks, length) : chunks.join('');
-	};
-
-	stream.getBufferedLength = () => length;
-
-	return stream;
-};
-
-
-/***/ }),
-
-/***/ 1766:
-/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
-
-"use strict";
-
-const {constants: BufferConstants} = __nccwpck_require__(4300);
-const stream = __nccwpck_require__(2781);
-const {promisify} = __nccwpck_require__(3837);
-const bufferStream = __nccwpck_require__(1585);
-
-const streamPipelinePromisified = promisify(stream.pipeline);
-
-class MaxBufferError extends Error {
-	constructor() {
-		super('maxBuffer exceeded');
-		this.name = 'MaxBufferError';
-	}
-}
-
-async function getStream(inputStream, options) {
-	if (!inputStream) {
-		throw new Error('Expected a stream');
-	}
-
-	options = {
-		maxBuffer: Infinity,
-		...options
-	};
-
-	const {maxBuffer} = options;
-	const stream = bufferStream(options);
-
-	await new Promise((resolve, reject) => {
-		const rejectPromise = error => {
-			// Don't retrieve an oversized buffer.
-			if (error && stream.getBufferedLength() <= BufferConstants.MAX_LENGTH) {
-				error.bufferedData = stream.getBufferedValue();
-			}
-
-			reject(error);
-		};
-
-		(async () => {
-			try {
-				await streamPipelinePromisified(inputStream, stream);
-				resolve();
-			} catch (error) {
-				rejectPromise(error);
-			}
-		})();
-
-		stream.on('data', () => {
-			if (stream.getBufferedLength() > maxBuffer) {
-				rejectPromise(new MaxBufferError());
-			}
-		});
-	});
-
-	return stream.getBufferedValue();
-}
-
-module.exports = getStream;
-module.exports.buffer = (stream, options) => getStream(stream, {...options, encoding: 'buffer'});
-module.exports.array = (stream, options) => getStream(stream, {...options, array: true});
-module.exports.MaxBufferError = MaxBufferError;
 
 
 /***/ }),
@@ -12980,52 +11520,6 @@ module.exports = (name, value) => {
 
 /***/ }),
 
-/***/ 3287:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-
-/*!
- * is-plain-object <https://github.com/jonschlinkert/is-plain-object>
- *
- * Copyright (c) 2014-2017, Jon Schlinkert.
- * Released under the MIT License.
- */
-
-function isObject(o) {
-  return Object.prototype.toString.call(o) === '[object Object]';
-}
-
-function isPlainObject(o) {
-  var ctor,prot;
-
-  if (isObject(o) === false) return false;
-
-  // If has modified constructor
-  ctor = o.constructor;
-  if (ctor === undefined) return true;
-
-  // If has modified prototype
-  prot = ctor.prototype;
-  if (isObject(prot) === false) return false;
-
-  // If constructor does not have an Object-specific method
-  if (prot.hasOwnProperty('isPrototypeOf') === false) {
-    return false;
-  }
-
-  // Most likely a plain Object
-  return true;
-}
-
-exports.isPlainObject = isPlainObject;
-
-
-/***/ }),
-
 /***/ 2820:
 /***/ ((__unused_webpack_module, exports) => {
 
@@ -15540,6 +14034,7 @@ const MockAgent = __nccwpck_require__(6771)
 const MockPool = __nccwpck_require__(6193)
 const mockErrors = __nccwpck_require__(888)
 const ProxyAgent = __nccwpck_require__(7858)
+const RetryHandler = __nccwpck_require__(2286)
 const { getGlobalDispatcher, setGlobalDispatcher } = __nccwpck_require__(1892)
 const DecoratorHandler = __nccwpck_require__(6930)
 const RedirectHandler = __nccwpck_require__(2860)
@@ -15561,6 +14056,7 @@ module.exports.Pool = Pool
 module.exports.BalancedPool = BalancedPool
 module.exports.Agent = Agent
 module.exports.ProxyAgent = ProxyAgent
+module.exports.RetryHandler = RetryHandler
 
 module.exports.DecoratorHandler = DecoratorHandler
 module.exports.RedirectHandler = RedirectHandler
@@ -16461,6 +14957,7 @@ function request (opts, callback) {
 }
 
 module.exports = request
+module.exports.RequestHandler = RequestHandler
 
 
 /***/ }),
@@ -16843,6 +15340,8 @@ const kBody = Symbol('kBody')
 const kAbort = Symbol('abort')
 const kContentType = Symbol('kContentType')
 
+const noop = () => {}
+
 module.exports = class BodyReadable extends Readable {
   constructor ({
     resume,
@@ -16976,37 +15475,50 @@ module.exports = class BodyReadable extends Readable {
     return this[kBody]
   }
 
-  async dump (opts) {
+  dump (opts) {
     let limit = opts && Number.isFinite(opts.limit) ? opts.limit : 262144
     const signal = opts && opts.signal
-    const abortFn = () => {
-      this.destroy()
-    }
-    let signalListenerCleanup
+
     if (signal) {
-      if (typeof signal !== 'object' || !('aborted' in signal)) {
-        throw new InvalidArgumentError('signal must be an AbortSignal')
-      }
-      util.throwIfAborted(signal)
-      signalListenerCleanup = util.addAbortListener(signal, abortFn)
-    }
-    try {
-      for await (const chunk of this) {
-        util.throwIfAborted(signal)
-        limit -= Buffer.byteLength(chunk)
-        if (limit < 0) {
-          return
+      try {
+        if (typeof signal !== 'object' || !('aborted' in signal)) {
+          throw new InvalidArgumentError('signal must be an AbortSignal')
         }
-      }
-    } catch {
-      util.throwIfAborted(signal)
-    } finally {
-      if (typeof signalListenerCleanup === 'function') {
-        signalListenerCleanup()
-      } else if (signalListenerCleanup) {
-        signalListenerCleanup[Symbol.dispose]()
+        util.throwIfAborted(signal)
+      } catch (err) {
+        return Promise.reject(err)
       }
     }
+
+    if (this.closed) {
+      return Promise.resolve(null)
+    }
+
+    return new Promise((resolve, reject) => {
+      const signalListenerCleanup = signal
+        ? util.addAbortListener(signal, () => {
+          this.destroy()
+        })
+        : noop
+
+      this
+        .on('close', function () {
+          signalListenerCleanup()
+          if (signal && signal.aborted) {
+            reject(signal.reason || Object.assign(new Error('The operation was aborted'), { name: 'AbortError' }))
+          } else {
+            resolve(null)
+          }
+        })
+        .on('error', noop)
+        .on('data', function (chunk) {
+          limit -= chunk.length
+          if (limit <= 0) {
+            this.destroy()
+          }
+        })
+        .resume()
+    })
   }
 }
 
@@ -18386,13 +16898,13 @@ module.exports = {
 /***/ }),
 
 /***/ 9174:
-/***/ ((module) => {
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 "use strict";
 
 
 module.exports = {
-  kConstruct: Symbol('constructable')
+  kConstruct: (__nccwpck_require__(2785).kConstruct)
 }
 
 
@@ -19378,11 +17890,9 @@ class Parser {
       socket[kReset] = true
     }
 
-    let pause
-    try {
-      pause = request.onHeaders(statusCode, headers, this.resume, statusText) === false
-    } catch (err) {
-      util.destroy(socket, err)
+    const pause = request.onHeaders(statusCode, headers, this.resume, statusText) === false
+
+    if (request.aborted) {
       return -1
     }
 
@@ -19429,13 +17939,8 @@ class Parser {
 
     this.bytesRead += buf.length
 
-    try {
-      if (request.onData(buf) === false) {
-        return constants.ERROR.PAUSED
-      }
-    } catch (err) {
-      util.destroy(socket, err)
-      return -1
+    if (request.onData(buf) === false) {
+      return constants.ERROR.PAUSED
     }
   }
 
@@ -19476,11 +17981,7 @@ class Parser {
       return -1
     }
 
-    try {
-      request.onComplete(headers)
-    } catch (err) {
-      errorRequest(client, request, err)
-    }
+    request.onComplete(headers)
 
     client[kQueue][client[kRunningIdx]++] = null
 
@@ -19644,7 +18145,7 @@ async function connect (client) {
     const idx = hostname.indexOf(']')
 
     assert(idx !== -1)
-    const ip = hostname.substr(1, idx - 1)
+    const ip = hostname.substring(1, idx)
 
     assert(net.isIP(ip))
     hostname = ip
@@ -20143,6 +18644,7 @@ function writeH2 (client, session, request) {
     return false
   }
 
+  /** @type {import('node:http2').ClientHttp2Stream} */
   let stream
   const h2State = client[kHTTP2SessionState]
 
@@ -20238,14 +18740,10 @@ function writeH2 (client, session, request) {
   const shouldEndStream = method === 'GET' || method === 'HEAD'
   if (expectContinue) {
     headers[HTTP2_HEADER_EXPECT] = '100-continue'
-    /**
-     * @type {import('node:http2').ClientHttp2Stream}
-     */
     stream = session.request(headers, { endStream: shouldEndStream, signal })
 
     stream.once('continue', writeBodyH2)
   } else {
-    /** @type {import('node:http2').ClientHttp2Stream} */
     stream = session.request(headers, {
       endStream: shouldEndStream,
       signal
@@ -20257,7 +18755,9 @@ function writeH2 (client, session, request) {
   ++h2State.openStreams
 
   stream.once('response', headers => {
-    if (request.onHeaders(Number(headers[HTTP2_HEADER_STATUS]), headers, stream.resume.bind(stream), '') === false) {
+    const { [HTTP2_HEADER_STATUS]: statusCode, ...realHeaders } = headers
+
+    if (request.onHeaders(Number(statusCode), realHeaders, stream.resume.bind(stream), '') === false) {
       stream.pause()
     }
   })
@@ -20267,13 +18767,17 @@ function writeH2 (client, session, request) {
   })
 
   stream.on('data', (chunk) => {
-    if (request.onData(chunk) === false) stream.pause()
+    if (request.onData(chunk) === false) {
+      stream.pause()
+    }
   })
 
   stream.once('close', () => {
     h2State.openStreams -= 1
     // TODO(HTTP/2): unref only if current streams count is 0
-    if (h2State.openStreams === 0) session.unref()
+    if (h2State.openStreams === 0) {
+      session.unref()
+    }
   })
 
   stream.once('error', function (err) {
@@ -20433,7 +18937,11 @@ function writeStream ({ h2stream, body, client, request, socket, contentLength, 
     }
   }
   const onAbort = function () {
-    onFinished(new RequestAbortedError())
+    if (finished) {
+      return
+    }
+    const err = new RequestAbortedError()
+    queueMicrotask(() => onFinished(err))
   }
   const onFinished = function (err) {
     if (finished) {
@@ -21839,6 +20347,132 @@ module.exports = buildConnector
 
 /***/ }),
 
+/***/ 4462:
+/***/ ((module) => {
+
+"use strict";
+
+
+/** @type {Record<string, string | undefined>} */
+const headerNameLowerCasedRecord = {}
+
+// https://developer.mozilla.org/docs/Web/HTTP/Headers
+const wellknownHeaderNames = [
+  'Accept',
+  'Accept-Encoding',
+  'Accept-Language',
+  'Accept-Ranges',
+  'Access-Control-Allow-Credentials',
+  'Access-Control-Allow-Headers',
+  'Access-Control-Allow-Methods',
+  'Access-Control-Allow-Origin',
+  'Access-Control-Expose-Headers',
+  'Access-Control-Max-Age',
+  'Access-Control-Request-Headers',
+  'Access-Control-Request-Method',
+  'Age',
+  'Allow',
+  'Alt-Svc',
+  'Alt-Used',
+  'Authorization',
+  'Cache-Control',
+  'Clear-Site-Data',
+  'Connection',
+  'Content-Disposition',
+  'Content-Encoding',
+  'Content-Language',
+  'Content-Length',
+  'Content-Location',
+  'Content-Range',
+  'Content-Security-Policy',
+  'Content-Security-Policy-Report-Only',
+  'Content-Type',
+  'Cookie',
+  'Cross-Origin-Embedder-Policy',
+  'Cross-Origin-Opener-Policy',
+  'Cross-Origin-Resource-Policy',
+  'Date',
+  'Device-Memory',
+  'Downlink',
+  'ECT',
+  'ETag',
+  'Expect',
+  'Expect-CT',
+  'Expires',
+  'Forwarded',
+  'From',
+  'Host',
+  'If-Match',
+  'If-Modified-Since',
+  'If-None-Match',
+  'If-Range',
+  'If-Unmodified-Since',
+  'Keep-Alive',
+  'Last-Modified',
+  'Link',
+  'Location',
+  'Max-Forwards',
+  'Origin',
+  'Permissions-Policy',
+  'Pragma',
+  'Proxy-Authenticate',
+  'Proxy-Authorization',
+  'RTT',
+  'Range',
+  'Referer',
+  'Referrer-Policy',
+  'Refresh',
+  'Retry-After',
+  'Sec-WebSocket-Accept',
+  'Sec-WebSocket-Extensions',
+  'Sec-WebSocket-Key',
+  'Sec-WebSocket-Protocol',
+  'Sec-WebSocket-Version',
+  'Server',
+  'Server-Timing',
+  'Service-Worker-Allowed',
+  'Service-Worker-Navigation-Preload',
+  'Set-Cookie',
+  'SourceMap',
+  'Strict-Transport-Security',
+  'Supports-Loading-Mode',
+  'TE',
+  'Timing-Allow-Origin',
+  'Trailer',
+  'Transfer-Encoding',
+  'Upgrade',
+  'Upgrade-Insecure-Requests',
+  'User-Agent',
+  'Vary',
+  'Via',
+  'WWW-Authenticate',
+  'X-Content-Type-Options',
+  'X-DNS-Prefetch-Control',
+  'X-Frame-Options',
+  'X-Permitted-Cross-Domain-Policies',
+  'X-Powered-By',
+  'X-Requested-With',
+  'X-XSS-Protection'
+]
+
+for (let i = 0; i < wellknownHeaderNames.length; ++i) {
+  const key = wellknownHeaderNames[i]
+  const lowerCasedKey = key.toLowerCase()
+  headerNameLowerCasedRecord[key] = headerNameLowerCasedRecord[lowerCasedKey] =
+    lowerCasedKey
+}
+
+// Note: object prototypes should not be able to be referenced. e.g. `Object#hasOwnProperty`.
+Object.setPrototypeOf(headerNameLowerCasedRecord, null)
+
+module.exports = {
+  wellknownHeaderNames,
+  headerNameLowerCasedRecord
+}
+
+
+/***/ }),
+
 /***/ 8045:
 /***/ ((module) => {
 
@@ -22038,6 +20672,19 @@ class ResponseExceededMaxSizeError extends UndiciError {
   }
 }
 
+class RequestRetryError extends UndiciError {
+  constructor (message, code, { headers, data }) {
+    super(message)
+    Error.captureStackTrace(this, RequestRetryError)
+    this.name = 'RequestRetryError'
+    this.message = message || 'Request retry error'
+    this.code = 'UND_ERR_REQ_RETRY'
+    this.statusCode = code
+    this.data = data
+    this.headers = headers
+  }
+}
+
 module.exports = {
   HTTPParserError,
   UndiciError,
@@ -22057,7 +20704,8 @@ module.exports = {
   NotSupportedError,
   ResponseContentLengthMismatchError,
   BalancedPoolMissingUpstreamError,
-  ResponseExceededMaxSizeError
+  ResponseExceededMaxSizeError,
+  RequestRetryError
 }
 
 
@@ -22299,9 +20947,9 @@ class Request {
   onBodySent (chunk) {
     if (this[kHandler].onBodySent) {
       try {
-        this[kHandler].onBodySent(chunk)
+        return this[kHandler].onBodySent(chunk)
       } catch (err) {
-        this.onError(err)
+        this.abort(err)
       }
     }
   }
@@ -22313,9 +20961,9 @@ class Request {
 
     if (this[kHandler].onRequestSent) {
       try {
-        this[kHandler].onRequestSent()
+        return this[kHandler].onRequestSent()
       } catch (err) {
-        this.onError(err)
+        this.abort(err)
       }
     }
   }
@@ -22340,14 +20988,23 @@ class Request {
       channels.headers.publish({ request: this, response: { statusCode, headers, statusText } })
     }
 
-    return this[kHandler].onHeaders(statusCode, headers, resume, statusText)
+    try {
+      return this[kHandler].onHeaders(statusCode, headers, resume, statusText)
+    } catch (err) {
+      this.abort(err)
+    }
   }
 
   onData (chunk) {
     assert(!this.aborted)
     assert(!this.completed)
 
-    return this[kHandler].onData(chunk)
+    try {
+      return this[kHandler].onData(chunk)
+    } catch (err) {
+      this.abort(err)
+      return false
+    }
   }
 
   onUpgrade (statusCode, headers, socket) {
@@ -22366,7 +21023,13 @@ class Request {
     if (channels.trailers.hasSubscribers) {
       channels.trailers.publish({ request: this, trailers })
     }
-    return this[kHandler].onComplete(trailers)
+
+    try {
+      return this[kHandler].onComplete(trailers)
+    } catch (err) {
+      // TODO (fix): This might be a bad idea?
+      this.onError(err)
+    }
   }
 
   onError (error) {
@@ -22380,6 +21043,7 @@ class Request {
       return
     }
     this.aborted = true
+
     return this[kHandler].onError(error)
   }
 
@@ -22616,7 +21280,9 @@ module.exports = {
   kHTTP2BuildRequest: Symbol('http2 build request'),
   kHTTP1BuildRequest: Symbol('http1 build request'),
   kHTTP2CopyHeaders: Symbol('http2 copy headers'),
-  kHTTPConnVersion: Symbol('http connection version')
+  kHTTPConnVersion: Symbol('http connection version'),
+  kRetryHandlerDefaultRetry: Symbol('retry agent default retry'),
+  kConstruct: Symbol('constructable')
 }
 
 
@@ -22637,6 +21303,7 @@ const { InvalidArgumentError } = __nccwpck_require__(8045)
 const { Blob } = __nccwpck_require__(4300)
 const nodeUtil = __nccwpck_require__(3837)
 const { stringify } = __nccwpck_require__(3477)
+const { headerNameLowerCasedRecord } = __nccwpck_require__(4462)
 
 const [nodeMajor, nodeMinor] = process.versions.node.split('.').map(v => Number(v))
 
@@ -22753,13 +21420,13 @@ function getHostname (host) {
     const idx = host.indexOf(']')
 
     assert(idx !== -1)
-    return host.substr(1, idx - 1)
+    return host.substring(1, idx)
   }
 
   const idx = host.indexOf(':')
   if (idx === -1) return host
 
-  return host.substr(0, idx)
+  return host.substring(0, idx)
 }
 
 // IP addresses are not valid server names per RFC6066
@@ -22846,6 +21513,15 @@ function parseKeepAliveTimeout (val) {
   return m ? parseInt(m[1], 10) * 1000 : null
 }
 
+/**
+ * Retrieves a header name and returns its lowercase value.
+ * @param {string | Buffer} value Header name
+ * @returns {string}
+ */
+function headerNameToString (value) {
+  return headerNameLowerCasedRecord[value] || value.toLowerCase()
+}
+
 function parseHeaders (headers, obj = {}) {
   // For H2 support
   if (!Array.isArray(headers)) return headers
@@ -22856,7 +21532,7 @@ function parseHeaders (headers, obj = {}) {
 
     if (!val) {
       if (Array.isArray(headers[i + 1])) {
-        obj[key] = headers[i + 1]
+        obj[key] = headers[i + 1].map(x => x.toString('utf8'))
       } else {
         obj[key] = headers[i + 1].toString('utf8')
       }
@@ -23059,16 +21735,7 @@ function throwIfAborted (signal) {
   }
 }
 
-let events
 function addAbortListener (signal, listener) {
-  if (typeof Symbol.dispose === 'symbol') {
-    if (!events) {
-      events = __nccwpck_require__(2361)
-    }
-    if (typeof events.addAbortListener === 'function' && 'aborted' in signal) {
-      return events.addAbortListener(signal, listener)
-    }
-  }
   if ('addEventListener' in signal) {
     signal.addEventListener('abort', listener, { once: true })
     return () => signal.removeEventListener('abort', listener)
@@ -23092,6 +21759,21 @@ function toUSVString (val) {
   return `${val}`
 }
 
+// Parsed accordingly to RFC 9110
+// https://www.rfc-editor.org/rfc/rfc9110#field.content-range
+function parseRangeHeader (range) {
+  if (range == null || range === '') return { start: 0, end: null, size: null }
+
+  const m = range ? range.match(/^bytes (\d+)-(\d+)\/(\d+)?$/) : null
+  return m
+    ? {
+        start: parseInt(m[1]),
+        end: m[2] ? parseInt(m[2]) : null,
+        size: m[3] ? parseInt(m[3]) : null
+      }
+    : null
+}
+
 const kEnumerableProperty = Object.create(null)
 kEnumerableProperty.enumerable = true
 
@@ -23111,6 +21793,7 @@ module.exports = {
   isIterable,
   isAsyncIterable,
   isDestroyed,
+  headerNameToString,
   parseRawHeaders,
   parseHeaders,
   parseKeepAliveTimeout,
@@ -23125,9 +21808,11 @@ module.exports = {
   buildURL,
   throwIfAborted,
   addAbortListener,
+  parseRangeHeader,
   nodeMajor,
   nodeMinor,
-  nodeHasAutoSelectFamily: nodeMajor > 18 || (nodeMajor === 18 && nodeMinor >= 13)
+  nodeHasAutoSelectFamily: nodeMajor > 18 || (nodeMajor === 18 && nodeMinor >= 13),
+  safeHTTPMethods: ['GET', 'HEAD', 'OPTIONS', 'TRACE']
 }
 
 
@@ -23366,7 +22051,7 @@ module.exports = Dispatcher
 "use strict";
 
 
-const Busboy = __nccwpck_require__(3438)
+const Busboy = __nccwpck_require__(727)
 const util = __nccwpck_require__(3983)
 const {
   ReadableStreamFrom,
@@ -24256,17 +22941,14 @@ function dataURLProcessor (dataURL) {
  * @param {boolean} excludeFragment
  */
 function URLSerializer (url, excludeFragment = false) {
-  const href = url.href
-
   if (!excludeFragment) {
-    return href
+    return url.href
   }
 
-  const hash = href.lastIndexOf('#')
-  if (hash === -1) {
-    return href
-  }
-  return href.slice(0, hash)
+  const href = url.href
+  const hashLength = url.hash.length
+
+  return hashLength === 0 ? href : href.substring(0, href.length - hashLength)
 }
 
 // https://infra.spec.whatwg.org/#collect-a-sequence-of-code-points
@@ -25450,7 +24132,7 @@ module.exports = {
 
 
 
-const { kHeadersList } = __nccwpck_require__(2785)
+const { kHeadersList, kConstruct } = __nccwpck_require__(2785)
 const { kGuard } = __nccwpck_require__(5861)
 const { kEnumerableProperty } = __nccwpck_require__(3983)
 const {
@@ -25465,6 +24147,13 @@ const kHeadersMap = Symbol('headers map')
 const kHeadersSortedMap = Symbol('headers map sorted')
 
 /**
+ * @param {number} code
+ */
+function isHTTPWhiteSpaceCharCode (code) {
+  return code === 0x00a || code === 0x00d || code === 0x009 || code === 0x020
+}
+
+/**
  * @see https://fetch.spec.whatwg.org/#concept-header-value-normalize
  * @param {string} potentialValue
  */
@@ -25472,12 +24161,12 @@ function headerValueNormalize (potentialValue) {
   //  To normalize a byte sequence potentialValue, remove
   //  any leading and trailing HTTP whitespace bytes from
   //  potentialValue.
+  let i = 0; let j = potentialValue.length
 
-  // Trimming the end with `.replace()` and a RegExp is typically subject to
-  // ReDoS. This is safer and faster.
-  let i = potentialValue.length
-  while (/[\r\n\t ]/.test(potentialValue.charAt(--i)));
-  return potentialValue.slice(0, i + 1).replace(/^[\r\n\t ]+/, '')
+  while (j > i && isHTTPWhiteSpaceCharCode(potentialValue.charCodeAt(j - 1))) --j
+  while (j > i && isHTTPWhiteSpaceCharCode(potentialValue.charCodeAt(i))) ++i
+
+  return i === 0 && j === potentialValue.length ? potentialValue : potentialValue.substring(i, j)
 }
 
 function fill (headers, object) {
@@ -25486,7 +24175,8 @@ function fill (headers, object) {
   // 1. If object is a sequence, then for each header in object:
   // Note: webidl conversion to array has already been done.
   if (Array.isArray(object)) {
-    for (const header of object) {
+    for (let i = 0; i < object.length; ++i) {
+      const header = object[i]
       // 1. If header does not contain exactly two items, then throw a TypeError.
       if (header.length !== 2) {
         throw webidl.errors.exception({
@@ -25496,15 +24186,16 @@ function fill (headers, object) {
       }
 
       // 2. Append (header’s first item, header’s second item) to headers.
-      headers.append(header[0], header[1])
+      appendHeader(headers, header[0], header[1])
     }
   } else if (typeof object === 'object' && object !== null) {
     // Note: null should throw
 
     // 2. Otherwise, object is a record, then for each key → value in object,
     //    append (key, value) to headers
-    for (const [key, value] of Object.entries(object)) {
-      headers.append(key, value)
+    const keys = Object.keys(object)
+    for (let i = 0; i < keys.length; ++i) {
+      appendHeader(headers, keys[i], object[keys[i]])
     }
   } else {
     throw webidl.errors.conversionFailed({
@@ -25515,6 +24206,50 @@ function fill (headers, object) {
   }
 }
 
+/**
+ * @see https://fetch.spec.whatwg.org/#concept-headers-append
+ */
+function appendHeader (headers, name, value) {
+  // 1. Normalize value.
+  value = headerValueNormalize(value)
+
+  // 2. If name is not a header name or value is not a
+  //    header value, then throw a TypeError.
+  if (!isValidHeaderName(name)) {
+    throw webidl.errors.invalidArgument({
+      prefix: 'Headers.append',
+      value: name,
+      type: 'header name'
+    })
+  } else if (!isValidHeaderValue(value)) {
+    throw webidl.errors.invalidArgument({
+      prefix: 'Headers.append',
+      value,
+      type: 'header value'
+    })
+  }
+
+  // 3. If headers’s guard is "immutable", then throw a TypeError.
+  // 4. Otherwise, if headers’s guard is "request" and name is a
+  //    forbidden header name, return.
+  // Note: undici does not implement forbidden header names
+  if (headers[kGuard] === 'immutable') {
+    throw new TypeError('immutable')
+  } else if (headers[kGuard] === 'request-no-cors') {
+    // 5. Otherwise, if headers’s guard is "request-no-cors":
+    // TODO
+  }
+
+  // 6. Otherwise, if headers’s guard is "response" and name is a
+  //    forbidden response-header name, return.
+
+  // 7. Append (name, value) to headers’s header list.
+  return headers[kHeadersList].append(name, value)
+
+  // 8. If headers’s guard is "request-no-cors", then remove
+  //    privileged no-CORS request headers from headers
+}
+
 class HeadersList {
   /** @type {[string, string][]|null} */
   cookies = null
@@ -25523,7 +24258,7 @@ class HeadersList {
     if (init instanceof HeadersList) {
       this[kHeadersMap] = new Map(init[kHeadersMap])
       this[kHeadersSortedMap] = init[kHeadersSortedMap]
-      this.cookies = init.cookies
+      this.cookies = init.cookies === null ? null : [...init.cookies]
     } else {
       this[kHeadersMap] = new Map(init)
       this[kHeadersSortedMap] = null
@@ -25585,7 +24320,7 @@ class HeadersList {
     //    the first such header to value and remove the
     //    others.
     // 2. Otherwise, append header (name, value) to list.
-    return this[kHeadersMap].set(lowercaseName, { name, value })
+    this[kHeadersMap].set(lowercaseName, { name, value })
   }
 
   // https://fetch.spec.whatwg.org/#concept-header-list-delete
@@ -25598,20 +24333,18 @@ class HeadersList {
       this.cookies = null
     }
 
-    return this[kHeadersMap].delete(name)
+    this[kHeadersMap].delete(name)
   }
 
   // https://fetch.spec.whatwg.org/#concept-header-list-get
   get (name) {
-    // 1. If list does not contain name, then return null.
-    if (!this.contains(name)) {
-      return null
-    }
+    const value = this[kHeadersMap].get(name.toLowerCase())
 
+    // 1. If list does not contain name, then return null.
     // 2. Return the values of all headers in list whose name
     //    is a byte-case-insensitive match for name,
     //    separated from each other by 0x2C 0x20, in order.
-    return this[kHeadersMap].get(name.toLowerCase())?.value ?? null
+    return value === undefined ? null : value.value
   }
 
   * [Symbol.iterator] () {
@@ -25637,6 +24370,9 @@ class HeadersList {
 // https://fetch.spec.whatwg.org/#headers-class
 class Headers {
   constructor (init = undefined) {
+    if (init === kConstruct) {
+      return
+    }
     this[kHeadersList] = new HeadersList()
 
     // The new Headers(init) constructor steps are:
@@ -25660,43 +24396,7 @@ class Headers {
     name = webidl.converters.ByteString(name)
     value = webidl.converters.ByteString(value)
 
-    // 1. Normalize value.
-    value = headerValueNormalize(value)
-
-    // 2. If name is not a header name or value is not a
-    //    header value, then throw a TypeError.
-    if (!isValidHeaderName(name)) {
-      throw webidl.errors.invalidArgument({
-        prefix: 'Headers.append',
-        value: name,
-        type: 'header name'
-      })
-    } else if (!isValidHeaderValue(value)) {
-      throw webidl.errors.invalidArgument({
-        prefix: 'Headers.append',
-        value,
-        type: 'header value'
-      })
-    }
-
-    // 3. If headers’s guard is "immutable", then throw a TypeError.
-    // 4. Otherwise, if headers’s guard is "request" and name is a
-    //    forbidden header name, return.
-    // Note: undici does not implement forbidden header names
-    if (this[kGuard] === 'immutable') {
-      throw new TypeError('immutable')
-    } else if (this[kGuard] === 'request-no-cors') {
-      // 5. Otherwise, if headers’s guard is "request-no-cors":
-      // TODO
-    }
-
-    // 6. Otherwise, if headers’s guard is "response" and name is a
-    //    forbidden response-header name, return.
-
-    // 7. Append (name, value) to headers’s header list.
-    // 8. If headers’s guard is "request-no-cors", then remove
-    //    privileged no-CORS request headers from headers
-    return this[kHeadersList].append(name, value)
+    return appendHeader(this, name, value)
   }
 
   // https://fetch.spec.whatwg.org/#dom-headers-delete
@@ -25741,7 +24441,7 @@ class Headers {
     // 7. Delete name from this’s header list.
     // 8. If this’s guard is "request-no-cors", then remove
     //    privileged no-CORS request headers from this.
-    return this[kHeadersList].delete(name)
+    this[kHeadersList].delete(name)
   }
 
   // https://fetch.spec.whatwg.org/#dom-headers-get
@@ -25834,7 +24534,7 @@ class Headers {
     // 7. Set (name, value) in this’s header list.
     // 8. If this’s guard is "request-no-cors", then remove
     //    privileged no-CORS request headers from this
-    return this[kHeadersList].set(name, value)
+    this[kHeadersList].set(name, value)
   }
 
   // https://fetch.spec.whatwg.org/#dom-headers-getsetcookie
@@ -25870,7 +24570,8 @@ class Headers {
     const cookies = this[kHeadersList].cookies
 
     // 3. For each name of names:
-    for (const [name, value] of names) {
+    for (let i = 0; i < names.length; ++i) {
+      const [name, value] = names[i]
       // 1. If name is `set-cookie`, then:
       if (name === 'set-cookie') {
         // 1. Let values be a list of all values of headers in list whose name
@@ -25878,8 +24579,8 @@ class Headers {
 
         // 2. For each value of values:
         // 1. Append (name, value) to headers.
-        for (const value of cookies) {
-          headers.push([name, value])
+        for (let j = 0; j < cookies.length; ++j) {
+          headers.push([name, cookies[j]])
         }
       } else {
         // 2. Otherwise:
@@ -25903,6 +24604,12 @@ class Headers {
   keys () {
     webidl.brandCheck(this, Headers)
 
+    if (this[kGuard] === 'immutable') {
+      const value = this[kHeadersSortedMap]
+      return makeIterator(() => value, 'Headers',
+        'key')
+    }
+
     return makeIterator(
       () => [...this[kHeadersSortedMap].values()],
       'Headers',
@@ -25913,6 +24620,12 @@ class Headers {
   values () {
     webidl.brandCheck(this, Headers)
 
+    if (this[kGuard] === 'immutable') {
+      const value = this[kHeadersSortedMap]
+      return makeIterator(() => value, 'Headers',
+        'value')
+    }
+
     return makeIterator(
       () => [...this[kHeadersSortedMap].values()],
       'Headers',
@@ -25922,6 +24635,12 @@ class Headers {
 
   entries () {
     webidl.brandCheck(this, Headers)
+
+    if (this[kGuard] === 'immutable') {
+      const value = this[kHeadersSortedMap]
+      return makeIterator(() => value, 'Headers',
+        'key+value')
+    }
 
     return makeIterator(
       () => [...this[kHeadersSortedMap].values()],
@@ -26294,7 +25013,7 @@ function finalizeAndReportTiming (response, initiatorType = 'other') {
   }
 
   // 8. If response’s timing allow passed flag is not set, then:
-  if (!timingInfo.timingAllowPassed) {
+  if (!response.timingAllowPassed) {
     //  1. Set timingInfo to a the result of creating an opaque timing info for timingInfo.
     timingInfo = createOpaqueTimingInfo({
       startTime: timingInfo.startTime
@@ -27211,6 +25930,9 @@ function httpRedirectFetch (fetchParams, response) {
     // https://fetch.spec.whatwg.org/#cors-non-wildcard-request-header-name
     request.headersList.delete('authorization')
 
+    // https://fetch.spec.whatwg.org/#authentication-entries
+    request.headersList.delete('proxy-authorization', true)
+
     // "Cookie" and "Host" are forbidden request-headers, which undici doesn't implement.
     request.headersList.delete('cookie')
     request.headersList.delete('host')
@@ -27965,7 +26687,7 @@ async function httpNetworkFetch (
         path: url.pathname + url.search,
         origin: url.origin,
         method: request.method,
-        body: fetchParams.controller.dispatcher.isMockActive ? request.body && request.body.source : body,
+        body: fetchParams.controller.dispatcher.isMockActive ? request.body && (request.body.source || request.body.stream) : body,
         headers: request.headersList.entries,
         maxRedirections: 0,
         upgrade: request.mode === 'websocket' ? 'websocket' : undefined
@@ -28010,7 +26732,7 @@ async function httpNetworkFetch (
                 location = val
               }
 
-              headers.append(key, val)
+              headers[kHeadersList].append(key, val)
             }
           } else {
             const keys = Object.keys(headersList)
@@ -28024,7 +26746,7 @@ async function httpNetworkFetch (
                 location = val
               }
 
-              headers.append(key, val)
+              headers[kHeadersList].append(key, val)
             }
           }
 
@@ -28128,7 +26850,7 @@ async function httpNetworkFetch (
             const key = headersList[n + 0].toString('latin1')
             const val = headersList[n + 1].toString('latin1')
 
-            headers.append(key, val)
+            headers[kHeadersList].append(key, val)
           }
 
           resolve({
@@ -28171,7 +26893,8 @@ const {
   isValidHTTPToken,
   sameOrigin,
   normalizeMethod,
-  makePolicyContainer
+  makePolicyContainer,
+  normalizeMethodRecord
 } = __nccwpck_require__(2538)
 const {
   forbiddenMethodsSet,
@@ -28188,13 +26911,12 @@ const { kHeaders, kSignal, kState, kGuard, kRealm } = __nccwpck_require__(5861)
 const { webidl } = __nccwpck_require__(1744)
 const { getGlobalOrigin } = __nccwpck_require__(1246)
 const { URLSerializer } = __nccwpck_require__(685)
-const { kHeadersList } = __nccwpck_require__(2785)
+const { kHeadersList, kConstruct } = __nccwpck_require__(2785)
 const assert = __nccwpck_require__(9491)
 const { getMaxListeners, setMaxListeners, getEventListeners, defaultMaxListeners } = __nccwpck_require__(2361)
 
 let TransformStream = globalThis.TransformStream
 
-const kInit = Symbol('init')
 const kAbortController = Symbol('abortController')
 
 const requestFinalizer = new FinalizationRegistry(({ signal, abort }) => {
@@ -28205,7 +26927,7 @@ const requestFinalizer = new FinalizationRegistry(({ signal, abort }) => {
 class Request {
   // https://fetch.spec.whatwg.org/#dom-request
   constructor (input, init = {}) {
-    if (input === kInit) {
+    if (input === kConstruct) {
       return
     }
 
@@ -28344,8 +27066,10 @@ class Request {
       urlList: [...request.urlList]
     })
 
+    const initHasKey = Object.keys(init).length !== 0
+
     // 13. If init is not empty, then:
-    if (Object.keys(init).length > 0) {
+    if (initHasKey) {
       // 1. If request’s mode is "navigate", then set it to "same-origin".
       if (request.mode === 'navigate') {
         request.mode = 'same-origin'
@@ -28460,7 +27184,7 @@ class Request {
     }
 
     // 23. If init["integrity"] exists, then set request’s integrity metadata to it.
-    if (init.integrity !== undefined && init.integrity != null) {
+    if (init.integrity != null) {
       request.integrity = String(init.integrity)
     }
 
@@ -28476,16 +27200,16 @@ class Request {
 
       // 2. If method is not a method or method is a forbidden method, then
       // throw a TypeError.
-      if (!isValidHTTPToken(init.method)) {
-        throw TypeError(`'${init.method}' is not a valid HTTP method.`)
+      if (!isValidHTTPToken(method)) {
+        throw new TypeError(`'${method}' is not a valid HTTP method.`)
       }
 
       if (forbiddenMethodsSet.has(method.toUpperCase())) {
-        throw TypeError(`'${init.method}' HTTP method is unsupported.`)
+        throw new TypeError(`'${method}' HTTP method is unsupported.`)
       }
 
       // 3. Normalize method.
-      method = normalizeMethod(init.method)
+      method = normalizeMethodRecord[method] ?? normalizeMethod(method)
 
       // 4. Set request’s method to method.
       request.method = method
@@ -28556,7 +27280,7 @@ class Request {
     // 30. Set this’s headers to a new Headers object with this’s relevant
     // Realm, whose header list is request’s header list and guard is
     // "request".
-    this[kHeaders] = new Headers()
+    this[kHeaders] = new Headers(kConstruct)
     this[kHeaders][kHeadersList] = request.headersList
     this[kHeaders][kGuard] = 'request'
     this[kHeaders][kRealm] = this[kRealm]
@@ -28576,25 +27300,25 @@ class Request {
     }
 
     // 32. If init is not empty, then:
-    if (Object.keys(init).length !== 0) {
+    if (initHasKey) {
+      /** @type {HeadersList} */
+      const headersList = this[kHeaders][kHeadersList]
       // 1. Let headers be a copy of this’s headers and its associated header
       // list.
-      let headers = new Headers(this[kHeaders])
-
       // 2. If init["headers"] exists, then set headers to init["headers"].
-      if (init.headers !== undefined) {
-        headers = init.headers
-      }
+      const headers = init.headers !== undefined ? init.headers : new HeadersList(headersList)
 
       // 3. Empty this’s headers’s header list.
-      this[kHeaders][kHeadersList].clear()
+      headersList.clear()
 
       // 4. If headers is a Headers object, then for each header in its header
       // list, append header’s name/header’s value to this’s headers.
-      if (headers.constructor.name === 'Headers') {
+      if (headers instanceof HeadersList) {
         for (const [key, val] of headers) {
-          this[kHeaders].append(key, val)
+          headersList.append(key, val)
         }
+        // Note: Copy the `set-cookie` meta-data.
+        headersList.cookies = headers.cookies
       } else {
         // 5. Otherwise, fill this’s headers with headers.
         fillHeaders(this[kHeaders], headers)
@@ -28883,10 +27607,10 @@ class Request {
 
     // 3. Let clonedRequestObject be the result of creating a Request object,
     // given clonedRequest, this’s headers’s guard, and this’s relevant Realm.
-    const clonedRequestObject = new Request(kInit)
+    const clonedRequestObject = new Request(kConstruct)
     clonedRequestObject[kState] = clonedRequest
     clonedRequestObject[kRealm] = this[kRealm]
-    clonedRequestObject[kHeaders] = new Headers()
+    clonedRequestObject[kHeaders] = new Headers(kConstruct)
     clonedRequestObject[kHeaders][kHeadersList] = clonedRequest.headersList
     clonedRequestObject[kHeaders][kGuard] = this[kHeaders][kGuard]
     clonedRequestObject[kHeaders][kRealm] = this[kHeaders][kRealm]
@@ -29136,7 +27860,7 @@ const { webidl } = __nccwpck_require__(1744)
 const { FormData } = __nccwpck_require__(2015)
 const { getGlobalOrigin } = __nccwpck_require__(1246)
 const { URLSerializer } = __nccwpck_require__(685)
-const { kHeadersList } = __nccwpck_require__(2785)
+const { kHeadersList, kConstruct } = __nccwpck_require__(2785)
 const assert = __nccwpck_require__(9491)
 const { types } = __nccwpck_require__(3837)
 
@@ -29257,7 +27981,7 @@ class Response {
     // 2. Set this’s headers to a new Headers object with this’s relevant
     // Realm, whose header list is this’s response’s header list and guard
     // is "response".
-    this[kHeaders] = new Headers()
+    this[kHeaders] = new Headers(kConstruct)
     this[kHeaders][kGuard] = 'response'
     this[kHeaders][kHeadersList] = this[kState].headersList
     this[kHeaders][kRealm] = this[kRealm]
@@ -29627,11 +28351,7 @@ webidl.converters.XMLHttpRequestBodyInit = function (V) {
     return webidl.converters.Blob(V, { strict: false })
   }
 
-  if (
-    types.isAnyArrayBuffer(V) ||
-    types.isTypedArray(V) ||
-    types.isDataView(V)
-  ) {
+  if (types.isArrayBuffer(V) || types.isTypedArray(V) || types.isDataView(V)) {
     return webidl.converters.BufferSource(V)
   }
 
@@ -29721,14 +28441,18 @@ const { isBlobLike, toUSVString, ReadableStreamFrom } = __nccwpck_require__(3983
 const assert = __nccwpck_require__(9491)
 const { isUint8Array } = __nccwpck_require__(9830)
 
+let supportedHashes = []
+
 // https://nodejs.org/api/crypto.html#determining-if-crypto-support-is-unavailable
 /** @type {import('crypto')|undefined} */
 let crypto
 
 try {
   crypto = __nccwpck_require__(6113)
+  const possibleRelevantHashes = ['sha256', 'sha384', 'sha512']
+  supportedHashes = crypto.getHashes().filter((hash) => possibleRelevantHashes.includes(hash))
+/* c8 ignore next 3 */
 } catch {
-
 }
 
 function responseURL (response) {
@@ -29817,52 +28541,57 @@ function isValidReasonPhrase (statusText) {
   return true
 }
 
-function isTokenChar (c) {
-  return !(
-    c >= 0x7f ||
-    c <= 0x20 ||
-    c === '(' ||
-    c === ')' ||
-    c === '<' ||
-    c === '>' ||
-    c === '@' ||
-    c === ',' ||
-    c === ';' ||
-    c === ':' ||
-    c === '\\' ||
-    c === '"' ||
-    c === '/' ||
-    c === '[' ||
-    c === ']' ||
-    c === '?' ||
-    c === '=' ||
-    c === '{' ||
-    c === '}'
-  )
+/**
+ * @see https://tools.ietf.org/html/rfc7230#section-3.2.6
+ * @param {number} c
+ */
+function isTokenCharCode (c) {
+  switch (c) {
+    case 0x22:
+    case 0x28:
+    case 0x29:
+    case 0x2c:
+    case 0x2f:
+    case 0x3a:
+    case 0x3b:
+    case 0x3c:
+    case 0x3d:
+    case 0x3e:
+    case 0x3f:
+    case 0x40:
+    case 0x5b:
+    case 0x5c:
+    case 0x5d:
+    case 0x7b:
+    case 0x7d:
+      // DQUOTE and "(),/:;<=>?@[\]{}"
+      return false
+    default:
+      // VCHAR %x21-7E
+      return c >= 0x21 && c <= 0x7e
+  }
 }
 
-// See RFC 7230, Section 3.2.6.
-// https://github.com/chromium/chromium/blob/d7da0240cae77824d1eda25745c4022757499131/third_party/blink/renderer/platform/network/http_parsers.cc#L321
+/**
+ * @param {string} characters
+ */
 function isValidHTTPToken (characters) {
-  if (!characters || typeof characters !== 'string') {
+  if (characters.length === 0) {
     return false
   }
   for (let i = 0; i < characters.length; ++i) {
-    const c = characters.charCodeAt(i)
-    if (c > 0x7f || !isTokenChar(c)) {
+    if (!isTokenCharCode(characters.charCodeAt(i))) {
       return false
     }
   }
   return true
 }
 
-// https://fetch.spec.whatwg.org/#header-name
-// https://github.com/chromium/chromium/blob/b3d37e6f94f87d59e44662d6078f6a12de845d17/net/http/http_util.cc#L342
+/**
+ * @see https://fetch.spec.whatwg.org/#header-name
+ * @param {string} potentialValue
+ */
 function isValidHeaderName (potentialValue) {
-  if (potentialValue.length === 0) {
-    return false
-  }
-
   return isValidHTTPToken(potentialValue)
 }
 
@@ -30251,66 +28980,56 @@ function bytesMatch (bytes, metadataList) {
     return true
   }
 
-  // 3. If parsedMetadata is the empty set, return true.
+  // 3. If response is not eligible for integrity validation, return false.
+  // TODO
+
+  // 4. If parsedMetadata is the empty set, return true.
   if (parsedMetadata.length === 0) {
     return true
   }
 
-  // 4. Let metadata be the result of getting the strongest
+  // 5. Let metadata be the result of getting the strongest
   //    metadata from parsedMetadata.
-  const list = parsedMetadata.sort((c, d) => d.algo.localeCompare(c.algo))
-  // get the strongest algorithm
-  const strongest = list[0].algo
-  // get all entries that use the strongest algorithm; ignore weaker
-  const metadata = list.filter((item) => item.algo === strongest)
+  const strongest = getStrongestMetadata(parsedMetadata)
+  const metadata = filterMetadataListByAlgorithm(parsedMetadata, strongest)
 
-  // 5. For each item in metadata:
+  // 6. For each item in metadata:
   for (const item of metadata) {
     // 1. Let algorithm be the alg component of item.
     const algorithm = item.algo
 
     // 2. Let expectedValue be the val component of item.
-    let expectedValue = item.hash
+    const expectedValue = item.hash
 
     // See https://github.com/web-platform-tests/wpt/commit/e4c5cc7a5e48093220528dfdd1c4012dc3837a0e
     // "be liberal with padding". This is annoying, and it's not even in the spec.
 
-    if (expectedValue.endsWith('==')) {
-      expectedValue = expectedValue.slice(0, -2)
-    }
-
     // 3. Let actualValue be the result of applying algorithm to bytes.
     let actualValue = crypto.createHash(algorithm).update(bytes).digest('base64')
 
-    if (actualValue.endsWith('==')) {
-      actualValue = actualValue.slice(0, -2)
+    if (actualValue[actualValue.length - 1] === '=') {
+      if (actualValue[actualValue.length - 2] === '=') {
+        actualValue = actualValue.slice(0, -2)
+      } else {
+        actualValue = actualValue.slice(0, -1)
+      }
     }
 
     // 4. If actualValue is a case-sensitive match for expectedValue,
     //    return true.
-    if (actualValue === expectedValue) {
-      return true
-    }
-
-    let actualBase64URL = crypto.createHash(algorithm).update(bytes).digest('base64url')
-
-    if (actualBase64URL.endsWith('==')) {
-      actualBase64URL = actualBase64URL.slice(0, -2)
-    }
-
-    if (actualBase64URL === expectedValue) {
+    if (compareBase64Mixed(actualValue, expectedValue)) {
       return true
     }
   }
 
-  // 6. Return false.
+  // 7. Return false.
   return false
 }
 
 // https://w3c.github.io/webappsec-subresource-integrity/#grammardef-hash-with-options
 // https://www.w3.org/TR/CSP2/#source-list-syntax
 // https://www.rfc-editor.org/rfc/rfc5234#appendix-B.1
-const parseHashWithOptions = /((?<algo>sha256|sha384|sha512)-(?<hash>[A-z0-9+/]{1}.*={0,2}))( +[\x21-\x7e]?)?/i
+const parseHashWithOptions = /(?<algo>sha256|sha384|sha512)-((?<hash>[A-Za-z0-9+/]+|[A-Za-z0-9_-]+)={0,2}(?:\s|$)( +[!-~]*)?)?/i
 
 /**
  * @see https://w3c.github.io/webappsec-subresource-integrity/#parse-metadata
@@ -30324,8 +29043,6 @@ function parseMetadata (metadata) {
   // 2. Let empty be equal to true.
   let empty = true
 
-  const supportedHashes = crypto.getHashes()
-
   // 3. For each token returned by splitting metadata on spaces:
   for (const token of metadata.split(' ')) {
     // 1. Set empty to false.
@@ -30335,7 +29052,11 @@ function parseMetadata (metadata) {
     const parsedToken = parseHashWithOptions.exec(token)
 
     // 3. If token does not parse, continue to the next token.
-    if (parsedToken === null || parsedToken.groups === undefined) {
+    if (
+      parsedToken === null ||
+      parsedToken.groups === undefined ||
+      parsedToken.groups.algo === undefined
+    ) {
       // Note: Chromium blocks the request at this point, but Firefox
       // gives a warning that an invalid integrity was given. The
       // correct behavior is to ignore these, and subsequently not
@@ -30344,11 +29065,11 @@ function parseMetadata (metadata) {
     }
 
     // 4. Let algorithm be the hash-algo component of token.
-    const algorithm = parsedToken.groups.algo
+    const algorithm = parsedToken.groups.algo.toLowerCase()
 
     // 5. If algorithm is a hash function recognized by the user
     //    agent, add the parsed token to result.
-    if (supportedHashes.includes(algorithm.toLowerCase())) {
+    if (supportedHashes.includes(algorithm)) {
       result.push(parsedToken.groups)
     }
   }
@@ -30359,6 +29080,82 @@ function parseMetadata (metadata) {
   }
 
   return result
+}
+
+/**
+ * @param {{ algo: 'sha256' | 'sha384' | 'sha512' }[]} metadataList
+ */
+function getStrongestMetadata (metadataList) {
+  // Let algorithm be the algo component of the first item in metadataList.
+  // Can be sha256
+  let algorithm = metadataList[0].algo
+  // If the algorithm is sha512, then it is the strongest
+  // and we can return immediately
+  if (algorithm[3] === '5') {
+    return algorithm
+  }
+
+  for (let i = 1; i < metadataList.length; ++i) {
+    const metadata = metadataList[i]
+    // If the algorithm is sha512, then it is the strongest
+    // and we can break the loop immediately
+    if (metadata.algo[3] === '5') {
+      algorithm = 'sha512'
+      break
+    // If the algorithm is sha384, then a potential sha256 or sha384 is ignored
+    } else if (algorithm[3] === '3') {
+      continue
+    // algorithm is sha256, check if algorithm is sha384 and if so, set it as
+    // the strongest
+    } else if (metadata.algo[3] === '3') {
+      algorithm = 'sha384'
+    }
+  }
+  return algorithm
+}
+
+function filterMetadataListByAlgorithm (metadataList, algorithm) {
+  if (metadataList.length === 1) {
+    return metadataList
+  }
+
+  let pos = 0
+  for (let i = 0; i < metadataList.length; ++i) {
+    if (metadataList[i].algo === algorithm) {
+      metadataList[pos++] = metadataList[i]
+    }
+  }
+
+  metadataList.length = pos
+
+  return metadataList
+}
+
+/**
+ * Compares two base64 strings, allowing for base64url
+ * in the second string.
+ *
+* @param {string} actualValue always base64
+ * @param {string} expectedValue base64 or base64url
+ * @returns {boolean}
+ */
+function compareBase64Mixed (actualValue, expectedValue) {
+  if (actualValue.length !== expectedValue.length) {
+    return false
+  }
+  for (let i = 0; i < actualValue.length; ++i) {
+    if (actualValue[i] !== expectedValue[i]) {
+      if (
+        (actualValue[i] === '+' && expectedValue[i] === '-') ||
+        (actualValue[i] === '/' && expectedValue[i] === '_')
+      ) {
+        continue
+      }
+      return false
+    }
+  }
+
+  return true
 }
 
 // https://w3c.github.io/webappsec-upgrade-insecure-requests/#upgrade-request
@@ -30407,11 +29204,30 @@ function isCancelled (fetchParams) {
     fetchParams.controller.state === 'terminated'
 }
 
-// https://fetch.spec.whatwg.org/#concept-method-normalize
+const normalizeMethodRecord = {
+  delete: 'DELETE',
+  DELETE: 'DELETE',
+  get: 'GET',
+  GET: 'GET',
+  head: 'HEAD',
+  HEAD: 'HEAD',
+  options: 'OPTIONS',
+  OPTIONS: 'OPTIONS',
+  post: 'POST',
+  POST: 'POST',
+  put: 'PUT',
+  PUT: 'PUT'
+}
+
+// Note: object prototypes should not be able to be referenced. e.g. `Object#hasOwnProperty`.
+Object.setPrototypeOf(normalizeMethodRecord, null)
+
+/**
+ * @see https://fetch.spec.whatwg.org/#concept-method-normalize
+ * @param {string} method
+ */
 function normalizeMethod (method) {
-  return /^(DELETE|GET|HEAD|OPTIONS|POST|PUT)$/i.test(method)
-    ? method.toUpperCase()
-    : method
+  return normalizeMethodRecord[method.toLowerCase()] ?? method
 }
 
 // https://infra.spec.whatwg.org/#serialize-a-javascript-value-to-a-json-string
@@ -30756,7 +29572,9 @@ module.exports = {
   urlIsLocal,
   urlHasHttpsScheme,
   urlIsHttpHttpsScheme,
-  readAllBytes
+  readAllBytes,
+  normalizeMethodRecord,
+  parseMetadata
 }
 
 
@@ -31195,12 +30013,10 @@ webidl.converters.ByteString = function (V) {
   // 2. If the value of any element of x is greater than
   //    255, then throw a TypeError.
   for (let index = 0; index < x.length; index++) {
-    const charCode = x.charCodeAt(index)
-
-    if (charCode > 255) {
+    if (x.charCodeAt(index) > 255) {
       throw new TypeError(
         'Cannot convert argument to a ByteString because the character at ' +
-        `index ${index} has a value of ${charCode} which is greater than 255.`
+        `index ${index} has a value of ${x.charCodeAt(index)} which is greater than 255.`
       )
     }
   }
@@ -32845,12 +31661,17 @@ function parseLocation (statusCode, headers) {
 
 // https://tools.ietf.org/html/rfc7231#section-6.4.4
 function shouldRemoveHeader (header, removeContent, unknownOrigin) {
-  return (
-    (header.length === 4 && header.toString().toLowerCase() === 'host') ||
-    (removeContent && header.toString().toLowerCase().indexOf('content-') === 0) ||
-    (unknownOrigin && header.length === 13 && header.toString().toLowerCase() === 'authorization') ||
-    (unknownOrigin && header.length === 6 && header.toString().toLowerCase() === 'cookie')
-  )
+  if (header.length === 4) {
+    return util.headerNameToString(header) === 'host'
+  }
+  if (removeContent && util.headerNameToString(header).startsWith('content-')) {
+    return true
+  }
+  if (unknownOrigin && (header.length === 13 || header.length === 6 || header.length === 19)) {
+    const name = util.headerNameToString(header)
+    return name === 'authorization' || name === 'cookie' || name === 'proxy-authorization'
+  }
+  return false
 }
 
 // https://tools.ietf.org/html/rfc7231#section-6.4
@@ -32875,6 +31696,349 @@ function cleanRequestHeaders (headers, removeContent, unknownOrigin) {
 }
 
 module.exports = RedirectHandler
+
+
+/***/ }),
+
+/***/ 2286:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+const assert = __nccwpck_require__(9491)
+
+const { kRetryHandlerDefaultRetry } = __nccwpck_require__(2785)
+const { RequestRetryError } = __nccwpck_require__(8045)
+const { isDisturbed, parseHeaders, parseRangeHeader } = __nccwpck_require__(3983)
+
+function calculateRetryAfterHeader (retryAfter) {
+  const current = Date.now()
+  const diff = new Date(retryAfter).getTime() - current
+
+  return diff
+}
+
+class RetryHandler {
+  constructor (opts, handlers) {
+    const { retryOptions, ...dispatchOpts } = opts
+    const {
+      // Retry scoped
+      retry: retryFn,
+      maxRetries,
+      maxTimeout,
+      minTimeout,
+      timeoutFactor,
+      // Response scoped
+      methods,
+      errorCodes,
+      retryAfter,
+      statusCodes
+    } = retryOptions ?? {}
+
+    this.dispatch = handlers.dispatch
+    this.handler = handlers.handler
+    this.opts = dispatchOpts
+    this.abort = null
+    this.aborted = false
+    this.retryOpts = {
+      retry: retryFn ?? RetryHandler[kRetryHandlerDefaultRetry],
+      retryAfter: retryAfter ?? true,
+      maxTimeout: maxTimeout ?? 30 * 1000, // 30s,
+      timeout: minTimeout ?? 500, // .5s
+      timeoutFactor: timeoutFactor ?? 2,
+      maxRetries: maxRetries ?? 5,
+      // What errors we should retry
+      methods: methods ?? ['GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE', 'TRACE'],
+      // Indicates which errors to retry
+      statusCodes: statusCodes ?? [500, 502, 503, 504, 429],
+      // List of errors to retry
+      errorCodes: errorCodes ?? [
+        'ECONNRESET',
+        'ECONNREFUSED',
+        'ENOTFOUND',
+        'ENETDOWN',
+        'ENETUNREACH',
+        'EHOSTDOWN',
+        'EHOSTUNREACH',
+        'EPIPE'
+      ]
+    }
+
+    this.retryCount = 0
+    this.start = 0
+    this.end = null
+    this.etag = null
+    this.resume = null
+
+    // Handle possible onConnect duplication
+    this.handler.onConnect(reason => {
+      this.aborted = true
+      if (this.abort) {
+        this.abort(reason)
+      } else {
+        this.reason = reason
+      }
+    })
+  }
+
+  onRequestSent () {
+    if (this.handler.onRequestSent) {
+      this.handler.onRequestSent()
+    }
+  }
+
+  onUpgrade (statusCode, headers, socket) {
+    if (this.handler.onUpgrade) {
+      this.handler.onUpgrade(statusCode, headers, socket)
+    }
+  }
+
+  onConnect (abort) {
+    if (this.aborted) {
+      abort(this.reason)
+    } else {
+      this.abort = abort
+    }
+  }
+
+  onBodySent (chunk) {
+    if (this.handler.onBodySent) return this.handler.onBodySent(chunk)
+  }
+
+  static [kRetryHandlerDefaultRetry] (err, { state, opts }, cb) {
+    const { statusCode, code, headers } = err
+    const { method, retryOptions } = opts
+    const {
+      maxRetries,
+      timeout,
+      maxTimeout,
+      timeoutFactor,
+      statusCodes,
+      errorCodes,
+      methods
+    } = retryOptions
+    let { counter, currentTimeout } = state
+
+    currentTimeout =
+      currentTimeout != null && currentTimeout > 0 ? currentTimeout : timeout
+
+    // Any code that is not a Undici's originated and allowed to retry
+    if (
+      code &&
+      code !== 'UND_ERR_REQ_RETRY' &&
+      code !== 'UND_ERR_SOCKET' &&
+      !errorCodes.includes(code)
+    ) {
+      cb(err)
+      return
+    }
+
+    // If a set of method are provided and the current method is not in the list
+    if (Array.isArray(methods) && !methods.includes(method)) {
+      cb(err)
+      return
+    }
+
+    // If a set of status code are provided and the current status code is not in the list
+    if (
+      statusCode != null &&
+      Array.isArray(statusCodes) &&
+      !statusCodes.includes(statusCode)
+    ) {
+      cb(err)
+      return
+    }
+
+    // If we reached the max number of retries
+    if (counter > maxRetries) {
+      cb(err)
+      return
+    }
+
+    let retryAfterHeader = headers != null && headers['retry-after']
+    if (retryAfterHeader) {
+      retryAfterHeader = Number(retryAfterHeader)
+      retryAfterHeader = isNaN(retryAfterHeader)
+        ? calculateRetryAfterHeader(retryAfterHeader)
+        : retryAfterHeader * 1e3 // Retry-After is in seconds
+    }
+
+    const retryTimeout =
+      retryAfterHeader > 0
+        ? Math.min(retryAfterHeader, maxTimeout)
+        : Math.min(currentTimeout * timeoutFactor ** counter, maxTimeout)
+
+    state.currentTimeout = retryTimeout
+
+    setTimeout(() => cb(null), retryTimeout)
+  }
+
+  onHeaders (statusCode, rawHeaders, resume, statusMessage) {
+    const headers = parseHeaders(rawHeaders)
+
+    this.retryCount += 1
+
+    if (statusCode >= 300) {
+      this.abort(
+        new RequestRetryError('Request failed', statusCode, {
+          headers,
+          count: this.retryCount
+        })
+      )
+      return false
+    }
+
+    // Checkpoint for resume from where we left it
+    if (this.resume != null) {
+      this.resume = null
+
+      if (statusCode !== 206) {
+        return true
+      }
+
+      const contentRange = parseRangeHeader(headers['content-range'])
+      // If no content range
+      if (!contentRange) {
+        this.abort(
+          new RequestRetryError('Content-Range mismatch', statusCode, {
+            headers,
+            count: this.retryCount
+          })
+        )
+        return false
+      }
+
+      // Let's start with a weak etag check
+      if (this.etag != null && this.etag !== headers.etag) {
+        this.abort(
+          new RequestRetryError('ETag mismatch', statusCode, {
+            headers,
+            count: this.retryCount
+          })
+        )
+        return false
+      }
+
+      const { start, size, end = size } = contentRange
+
+      assert(this.start === start, 'content-range mismatch')
+      assert(this.end == null || this.end === end, 'content-range mismatch')
+
+      this.resume = resume
+      return true
+    }
+
+    if (this.end == null) {
+      if (statusCode === 206) {
+        // First time we receive 206
+        const range = parseRangeHeader(headers['content-range'])
+
+        if (range == null) {
+          return this.handler.onHeaders(
+            statusCode,
+            rawHeaders,
+            resume,
+            statusMessage
+          )
+        }
+
+        const { start, size, end = size } = range
+
+        assert(
+          start != null && Number.isFinite(start) && this.start !== start,
+          'content-range mismatch'
+        )
+        assert(Number.isFinite(start))
+        assert(
+          end != null && Number.isFinite(end) && this.end !== end,
+          'invalid content-length'
+        )
+
+        this.start = start
+        this.end = end
+      }
+
+      // We make our best to checkpoint the body for further range headers
+      if (this.end == null) {
+        const contentLength = headers['content-length']
+        this.end = contentLength != null ? Number(contentLength) : null
+      }
+
+      assert(Number.isFinite(this.start))
+      assert(
+        this.end == null || Number.isFinite(this.end),
+        'invalid content-length'
+      )
+
+      this.resume = resume
+      this.etag = headers.etag != null ? headers.etag : null
+
+      return this.handler.onHeaders(
+        statusCode,
+        rawHeaders,
+        resume,
+        statusMessage
+      )
+    }
+
+    const err = new RequestRetryError('Request failed', statusCode, {
+      headers,
+      count: this.retryCount
+    })
+
+    this.abort(err)
+
+    return false
+  }
+
+  onData (chunk) {
+    this.start += chunk.length
+
+    return this.handler.onData(chunk)
+  }
+
+  onComplete (rawTrailers) {
+    this.retryCount = 0
+    return this.handler.onComplete(rawTrailers)
+  }
+
+  onError (err) {
+    if (this.aborted || isDisturbed(this.opts.body)) {
+      return this.handler.onError(err)
+    }
+
+    this.retryOpts.retry(
+      err,
+      {
+        state: { counter: this.retryCount++, currentTimeout: this.retryAfter },
+        opts: { retryOptions: this.retryOpts, ...this.opts }
+      },
+      onRetry.bind(this)
+    )
+
+    function onRetry (err) {
+      if (err != null || this.aborted || isDisturbed(this.opts.body)) {
+        return this.handler.onError(err)
+      }
+
+      if (this.start !== 0) {
+        this.opts = {
+          ...this.opts,
+          headers: {
+            ...this.opts.headers,
+            range: `bytes=${this.start}-${this.end ?? ''}`
+          }
+        }
+      }
+
+      try {
+        this.dispatch(this.opts, this)
+      } catch (err) {
+        this.handler.onError(err)
+      }
+    }
+  }
+}
+
+module.exports = RetryHandler
 
 
 /***/ }),
@@ -34799,6 +33963,9 @@ class ProxyAgent extends DispatcherBase {
     this[kProxyTls] = opts.proxyTls
     this[kProxyHeaders] = opts.headers || {}
 
+    const resolvedUrl = new URL(opts.uri)
+    const { origin, port, host, username, password } = resolvedUrl
+
     if (opts.auth && opts.token) {
       throw new InvalidArgumentError('opts.auth cannot be used in combination with opts.token')
     } else if (opts.auth) {
@@ -34806,10 +33973,9 @@ class ProxyAgent extends DispatcherBase {
       this[kProxyHeaders]['proxy-authorization'] = `Basic ${opts.auth}`
     } else if (opts.token) {
       this[kProxyHeaders]['proxy-authorization'] = opts.token
+    } else if (username && password) {
+      this[kProxyHeaders]['proxy-authorization'] = `Basic ${Buffer.from(`${decodeURIComponent(username)}:${decodeURIComponent(password)}`).toString('base64')}`
     }
-
-    const resolvedUrl = new URL(opts.uri)
-    const { origin, port, host } = resolvedUrl
 
     const connect = buildConnector({ ...opts.proxyTls })
     this[kConnectEndpoint] = buildConnector({ ...opts.requestTls })
@@ -34834,7 +34000,7 @@ class ProxyAgent extends DispatcherBase {
           })
           if (statusCode !== 200) {
             socket.on('error', () => {}).destroy()
-            callback(new RequestAbortedError('Proxy response !== 200 when HTTP Tunneling'))
+            callback(new RequestAbortedError(`Proxy response (${statusCode}) !== 200 when HTTP Tunneling`))
           }
           if (opts.protocol !== 'https:') {
             callback(null, socket)
@@ -37020,7 +36186,7 @@ function getUserAgent() {
     return navigator.userAgent;
   }
 
-  if (typeof process === "object" && "version" in process) {
+  if (typeof process === "object" && process.version !== undefined) {
     return `Node.js/${process.version.substr(1)} (${process.platform}; ${process.arch})`;
   }
 
@@ -37771,7 +36937,7 @@ const pjdata = __importStar(__nccwpck_require__(6055));
 const os_1 = __importDefault(__nccwpck_require__(2037));
 const path_1 = __importDefault(__nccwpck_require__(1017));
 const fs_1 = __importDefault(__nccwpck_require__(7147));
-const got_1 = __importDefault(__nccwpck_require__(137));
+const got_1 = __importDefault(__nccwpck_require__(2401));
 const child_process_1 = __importDefault(__nccwpck_require__(2081));
 const pj = pjdata;
 /**
@@ -37781,11 +36947,7 @@ const pj = pjdata;
  */
 function extractArchive(archivePath) {
     return __awaiter(this, void 0, void 0, function* () {
-        const platform = os_1.default.platform();
-        return platform === "win32"
-            // Windows requires the .zip extension for extraction
-            ? tc.extractZip(archivePath + '.zip')
-            : tc.extractTar(archivePath);
+        return archivePath.endsWith(".zip") ? tc.extractZip(archivePath) : tc.extractTar(archivePath);
     });
 }
 exports.extractArchive = extractArchive;
@@ -37823,11 +36985,16 @@ function downloadRunner(info, token, hashCheck) {
             } : {})),
         }), fs_1.default.createWriteStream(filename));
         const extPath = yield extractArchive(filename);
-        const execPath = path_1.default.join(extPath, info.filename);
-        fs_1.default.chmodSync(execPath, 0o755);
+        let execPath = path_1.default.join(extPath, info.filename);
+        if (os_1.default.platform() === "linux" || os_1.default.platform() === "darwin") {
+            fs_1.default.chmodSync(execPath, 0o755);
+        }
+        else {
+            execPath = execPath + ".exe";
+        }
         if (hashCheck) {
             const hash = yield calculateFileHash(execPath);
-            if (hash.length !== 64 || hash !== pj.binaries[os_1.default.platform()]) {
+            if (hash.length !== 64 || hash !== pj.binaries[`${os_1.default.platform()}-${os_1.default.arch()}`]) {
                 throw new Error(`Hash mismatch for ${execPath}`);
             }
         }
@@ -37899,7 +37066,8 @@ function run() {
         }
         else {
             const baseUrl = `https://github.com/actionforge/${pj.name}/releases/download/v${pj.version}`;
-            const downloadUrl = `${runnerBaseUrl.replace(/\/$/, "") || baseUrl}/graph-runner-${os_1.default.platform()}-${os_1.default.arch()}.tar.gz`;
+            const archiveExt = os_1.default.platform() === "linux" ? "tar.gz" : "zip";
+            const downloadUrl = `${runnerBaseUrl.replace(/\/$/, "") || baseUrl}/graph-runner-${os_1.default.platform()}-${os_1.default.arch()}.${archiveExt}`;
             if (runnerBaseUrl) {
                 console.log("\u27a1 Custom runner URL set:", downloadUrl);
             }
@@ -38169,7 +37337,1632 @@ module.exports = require("zlib");
 
 /***/ }),
 
-/***/ 137:
+/***/ 2960:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const WritableStream = (__nccwpck_require__(4492).Writable)
+const inherits = (__nccwpck_require__(7261).inherits)
+
+const StreamSearch = __nccwpck_require__(1142)
+
+const PartStream = __nccwpck_require__(1620)
+const HeaderParser = __nccwpck_require__(2032)
+
+const DASH = 45
+const B_ONEDASH = Buffer.from('-')
+const B_CRLF = Buffer.from('\r\n')
+const EMPTY_FN = function () {}
+
+function Dicer (cfg) {
+  if (!(this instanceof Dicer)) { return new Dicer(cfg) }
+  WritableStream.call(this, cfg)
+
+  if (!cfg || (!cfg.headerFirst && typeof cfg.boundary !== 'string')) { throw new TypeError('Boundary required') }
+
+  if (typeof cfg.boundary === 'string') { this.setBoundary(cfg.boundary) } else { this._bparser = undefined }
+
+  this._headerFirst = cfg.headerFirst
+
+  this._dashes = 0
+  this._parts = 0
+  this._finished = false
+  this._realFinish = false
+  this._isPreamble = true
+  this._justMatched = false
+  this._firstWrite = true
+  this._inHeader = true
+  this._part = undefined
+  this._cb = undefined
+  this._ignoreData = false
+  this._partOpts = { highWaterMark: cfg.partHwm }
+  this._pause = false
+
+  const self = this
+  this._hparser = new HeaderParser(cfg)
+  this._hparser.on('header', function (header) {
+    self._inHeader = false
+    self._part.emit('header', header)
+  })
+}
+inherits(Dicer, WritableStream)
+
+Dicer.prototype.emit = function (ev) {
+  if (ev === 'finish' && !this._realFinish) {
+    if (!this._finished) {
+      const self = this
+      process.nextTick(function () {
+        self.emit('error', new Error('Unexpected end of multipart data'))
+        if (self._part && !self._ignoreData) {
+          const type = (self._isPreamble ? 'Preamble' : 'Part')
+          self._part.emit('error', new Error(type + ' terminated early due to unexpected end of multipart data'))
+          self._part.push(null)
+          process.nextTick(function () {
+            self._realFinish = true
+            self.emit('finish')
+            self._realFinish = false
+          })
+          return
+        }
+        self._realFinish = true
+        self.emit('finish')
+        self._realFinish = false
+      })
+    }
+  } else { WritableStream.prototype.emit.apply(this, arguments) }
+}
+
+Dicer.prototype._write = function (data, encoding, cb) {
+  // ignore unexpected data (e.g. extra trailer data after finished)
+  if (!this._hparser && !this._bparser) { return cb() }
+
+  if (this._headerFirst && this._isPreamble) {
+    if (!this._part) {
+      this._part = new PartStream(this._partOpts)
+      if (this.listenerCount('preamble') !== 0) { this.emit('preamble', this._part) } else { this._ignore() }
+    }
+    const r = this._hparser.push(data)
+    if (!this._inHeader && r !== undefined && r < data.length) { data = data.slice(r) } else { return cb() }
+  }
+
+  // allows for "easier" testing
+  if (this._firstWrite) {
+    this._bparser.push(B_CRLF)
+    this._firstWrite = false
+  }
+
+  this._bparser.push(data)
+
+  if (this._pause) { this._cb = cb } else { cb() }
+}
+
+Dicer.prototype.reset = function () {
+  this._part = undefined
+  this._bparser = undefined
+  this._hparser = undefined
+}
+
+Dicer.prototype.setBoundary = function (boundary) {
+  const self = this
+  this._bparser = new StreamSearch('\r\n--' + boundary)
+  this._bparser.on('info', function (isMatch, data, start, end) {
+    self._oninfo(isMatch, data, start, end)
+  })
+}
+
+Dicer.prototype._ignore = function () {
+  if (this._part && !this._ignoreData) {
+    this._ignoreData = true
+    this._part.on('error', EMPTY_FN)
+    // we must perform some kind of read on the stream even though we are
+    // ignoring the data, otherwise node's Readable stream will not emit 'end'
+    // after pushing null to the stream
+    this._part.resume()
+  }
+}
+
+Dicer.prototype._oninfo = function (isMatch, data, start, end) {
+  let buf; const self = this; let i = 0; let r; let shouldWriteMore = true
+
+  if (!this._part && this._justMatched && data) {
+    while (this._dashes < 2 && (start + i) < end) {
+      if (data[start + i] === DASH) {
+        ++i
+        ++this._dashes
+      } else {
+        if (this._dashes) { buf = B_ONEDASH }
+        this._dashes = 0
+        break
+      }
+    }
+    if (this._dashes === 2) {
+      if ((start + i) < end && this.listenerCount('trailer') !== 0) { this.emit('trailer', data.slice(start + i, end)) }
+      this.reset()
+      this._finished = true
+      // no more parts will be added
+      if (self._parts === 0) {
+        self._realFinish = true
+        self.emit('finish')
+        self._realFinish = false
+      }
+    }
+    if (this._dashes) { return }
+  }
+  if (this._justMatched) { this._justMatched = false }
+  if (!this._part) {
+    this._part = new PartStream(this._partOpts)
+    this._part._read = function (n) {
+      self._unpause()
+    }
+    if (this._isPreamble && this.listenerCount('preamble') !== 0) {
+      this.emit('preamble', this._part)
+    } else if (this._isPreamble !== true && this.listenerCount('part') !== 0) {
+      this.emit('part', this._part)
+    } else {
+      this._ignore()
+    }
+    if (!this._isPreamble) { this._inHeader = true }
+  }
+  if (data && start < end && !this._ignoreData) {
+    if (this._isPreamble || !this._inHeader) {
+      if (buf) { shouldWriteMore = this._part.push(buf) }
+      shouldWriteMore = this._part.push(data.slice(start, end))
+      if (!shouldWriteMore) { this._pause = true }
+    } else if (!this._isPreamble && this._inHeader) {
+      if (buf) { this._hparser.push(buf) }
+      r = this._hparser.push(data.slice(start, end))
+      if (!this._inHeader && r !== undefined && r < end) { this._oninfo(false, data, start + r, end) }
+    }
+  }
+  if (isMatch) {
+    this._hparser.reset()
+    if (this._isPreamble) { this._isPreamble = false } else {
+      if (start !== end) {
+        ++this._parts
+        this._part.on('end', function () {
+          if (--self._parts === 0) {
+            if (self._finished) {
+              self._realFinish = true
+              self.emit('finish')
+              self._realFinish = false
+            } else {
+              self._unpause()
+            }
+          }
+        })
+      }
+    }
+    this._part.push(null)
+    this._part = undefined
+    this._ignoreData = false
+    this._justMatched = true
+    this._dashes = 0
+  }
+}
+
+Dicer.prototype._unpause = function () {
+  if (!this._pause) { return }
+
+  this._pause = false
+  if (this._cb) {
+    const cb = this._cb
+    this._cb = undefined
+    cb()
+  }
+}
+
+module.exports = Dicer
+
+
+/***/ }),
+
+/***/ 2032:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const EventEmitter = (__nccwpck_require__(5673).EventEmitter)
+const inherits = (__nccwpck_require__(7261).inherits)
+const getLimit = __nccwpck_require__(1467)
+
+const StreamSearch = __nccwpck_require__(1142)
+
+const B_DCRLF = Buffer.from('\r\n\r\n')
+const RE_CRLF = /\r\n/g
+const RE_HDR = /^([^:]+):[ \t]?([\x00-\xFF]+)?$/ // eslint-disable-line no-control-regex
+
+function HeaderParser (cfg) {
+  EventEmitter.call(this)
+
+  cfg = cfg || {}
+  const self = this
+  this.nread = 0
+  this.maxed = false
+  this.npairs = 0
+  this.maxHeaderPairs = getLimit(cfg, 'maxHeaderPairs', 2000)
+  this.maxHeaderSize = getLimit(cfg, 'maxHeaderSize', 80 * 1024)
+  this.buffer = ''
+  this.header = {}
+  this.finished = false
+  this.ss = new StreamSearch(B_DCRLF)
+  this.ss.on('info', function (isMatch, data, start, end) {
+    if (data && !self.maxed) {
+      if (self.nread + end - start >= self.maxHeaderSize) {
+        end = self.maxHeaderSize - self.nread + start
+        self.nread = self.maxHeaderSize
+        self.maxed = true
+      } else { self.nread += (end - start) }
+
+      self.buffer += data.toString('binary', start, end)
+    }
+    if (isMatch) { self._finish() }
+  })
+}
+inherits(HeaderParser, EventEmitter)
+
+HeaderParser.prototype.push = function (data) {
+  const r = this.ss.push(data)
+  if (this.finished) { return r }
+}
+
+HeaderParser.prototype.reset = function () {
+  this.finished = false
+  this.buffer = ''
+  this.header = {}
+  this.ss.reset()
+}
+
+HeaderParser.prototype._finish = function () {
+  if (this.buffer) { this._parseHeader() }
+  this.ss.matches = this.ss.maxMatches
+  const header = this.header
+  this.header = {}
+  this.buffer = ''
+  this.finished = true
+  this.nread = this.npairs = 0
+  this.maxed = false
+  this.emit('header', header)
+}
+
+HeaderParser.prototype._parseHeader = function () {
+  if (this.npairs === this.maxHeaderPairs) { return }
+
+  const lines = this.buffer.split(RE_CRLF)
+  const len = lines.length
+  let m, h
+
+  for (var i = 0; i < len; ++i) { // eslint-disable-line no-var
+    if (lines[i].length === 0) { continue }
+    if (lines[i][0] === '\t' || lines[i][0] === ' ') {
+      // folded header content
+      // RFC2822 says to just remove the CRLF and not the whitespace following
+      // it, so we follow the RFC and include the leading whitespace ...
+      if (h) {
+        this.header[h][this.header[h].length - 1] += lines[i]
+        continue
+      }
+    }
+
+    const posColon = lines[i].indexOf(':')
+    if (
+      posColon === -1 ||
+      posColon === 0
+    ) {
+      return
+    }
+    m = RE_HDR.exec(lines[i])
+    h = m[1].toLowerCase()
+    this.header[h] = this.header[h] || []
+    this.header[h].push((m[2] || ''))
+    if (++this.npairs === this.maxHeaderPairs) { break }
+  }
+}
+
+module.exports = HeaderParser
+
+
+/***/ }),
+
+/***/ 1620:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const inherits = (__nccwpck_require__(7261).inherits)
+const ReadableStream = (__nccwpck_require__(4492).Readable)
+
+function PartStream (opts) {
+  ReadableStream.call(this, opts)
+}
+inherits(PartStream, ReadableStream)
+
+PartStream.prototype._read = function (n) {}
+
+module.exports = PartStream
+
+
+/***/ }),
+
+/***/ 1142:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+/**
+ * Copyright Brian White. All rights reserved.
+ *
+ * @see https://github.com/mscdex/streamsearch
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to
+ * deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ * IN THE SOFTWARE.
+ *
+ * Based heavily on the Streaming Boyer-Moore-Horspool C++ implementation
+ * by Hongli Lai at: https://github.com/FooBarWidget/boyer-moore-horspool
+ */
+const EventEmitter = (__nccwpck_require__(5673).EventEmitter)
+const inherits = (__nccwpck_require__(7261).inherits)
+
+function SBMH (needle) {
+  if (typeof needle === 'string') {
+    needle = Buffer.from(needle)
+  }
+
+  if (!Buffer.isBuffer(needle)) {
+    throw new TypeError('The needle has to be a String or a Buffer.')
+  }
+
+  const needleLength = needle.length
+
+  if (needleLength === 0) {
+    throw new Error('The needle cannot be an empty String/Buffer.')
+  }
+
+  if (needleLength > 256) {
+    throw new Error('The needle cannot have a length bigger than 256.')
+  }
+
+  this.maxMatches = Infinity
+  this.matches = 0
+
+  this._occ = new Array(256)
+    .fill(needleLength) // Initialize occurrence table.
+  this._lookbehind_size = 0
+  this._needle = needle
+  this._bufpos = 0
+
+  this._lookbehind = Buffer.alloc(needleLength)
+
+  // Populate occurrence table with analysis of the needle,
+  // ignoring last letter.
+  for (var i = 0; i < needleLength - 1; ++i) { // eslint-disable-line no-var
+    this._occ[needle[i]] = needleLength - 1 - i
+  }
+}
+inherits(SBMH, EventEmitter)
+
+SBMH.prototype.reset = function () {
+  this._lookbehind_size = 0
+  this.matches = 0
+  this._bufpos = 0
+}
+
+SBMH.prototype.push = function (chunk, pos) {
+  if (!Buffer.isBuffer(chunk)) {
+    chunk = Buffer.from(chunk, 'binary')
+  }
+  const chlen = chunk.length
+  this._bufpos = pos || 0
+  let r
+  while (r !== chlen && this.matches < this.maxMatches) { r = this._sbmh_feed(chunk) }
+  return r
+}
+
+SBMH.prototype._sbmh_feed = function (data) {
+  const len = data.length
+  const needle = this._needle
+  const needleLength = needle.length
+  const lastNeedleChar = needle[needleLength - 1]
+
+  // Positive: points to a position in `data`
+  //           pos == 3 points to data[3]
+  // Negative: points to a position in the lookbehind buffer
+  //           pos == -2 points to lookbehind[lookbehind_size - 2]
+  let pos = -this._lookbehind_size
+  let ch
+
+  if (pos < 0) {
+    // Lookbehind buffer is not empty. Perform Boyer-Moore-Horspool
+    // search with character lookup code that considers both the
+    // lookbehind buffer and the current round's haystack data.
+    //
+    // Loop until
+    //   there is a match.
+    // or until
+    //   we've moved past the position that requires the
+    //   lookbehind buffer. In this case we switch to the
+    //   optimized loop.
+    // or until
+    //   the character to look at lies outside the haystack.
+    while (pos < 0 && pos <= len - needleLength) {
+      ch = this._sbmh_lookup_char(data, pos + needleLength - 1)
+
+      if (
+        ch === lastNeedleChar &&
+        this._sbmh_memcmp(data, pos, needleLength - 1)
+      ) {
+        this._lookbehind_size = 0
+        ++this.matches
+        this.emit('info', true)
+
+        return (this._bufpos = pos + needleLength)
+      }
+      pos += this._occ[ch]
+    }
+
+    // No match.
+
+    if (pos < 0) {
+      // There's too few data for Boyer-Moore-Horspool to run,
+      // so let's use a different algorithm to skip as much as
+      // we can.
+      // Forward pos until
+      //   the trailing part of lookbehind + data
+      //   looks like the beginning of the needle
+      // or until
+      //   pos == 0
+      while (pos < 0 && !this._sbmh_memcmp(data, pos, len - pos)) { ++pos }
+    }
+
+    if (pos >= 0) {
+      // Discard lookbehind buffer.
+      this.emit('info', false, this._lookbehind, 0, this._lookbehind_size)
+      this._lookbehind_size = 0
+    } else {
+      // Cut off part of the lookbehind buffer that has
+      // been processed and append the entire haystack
+      // into it.
+      const bytesToCutOff = this._lookbehind_size + pos
+      if (bytesToCutOff > 0) {
+        // The cut off data is guaranteed not to contain the needle.
+        this.emit('info', false, this._lookbehind, 0, bytesToCutOff)
+      }
+
+      this._lookbehind.copy(this._lookbehind, 0, bytesToCutOff,
+        this._lookbehind_size - bytesToCutOff)
+      this._lookbehind_size -= bytesToCutOff
+
+      data.copy(this._lookbehind, this._lookbehind_size)
+      this._lookbehind_size += len
+
+      this._bufpos = len
+      return len
+    }
+  }
+
+  pos += (pos >= 0) * this._bufpos
+
+  // Lookbehind buffer is now empty. We only need to check if the
+  // needle is in the haystack.
+  if (data.indexOf(needle, pos) !== -1) {
+    pos = data.indexOf(needle, pos)
+    ++this.matches
+    if (pos > 0) { this.emit('info', true, data, this._bufpos, pos) } else { this.emit('info', true) }
+
+    return (this._bufpos = pos + needleLength)
+  } else {
+    pos = len - needleLength
+  }
+
+  // There was no match. If there's trailing haystack data that we cannot
+  // match yet using the Boyer-Moore-Horspool algorithm (because the trailing
+  // data is less than the needle size) then match using a modified
+  // algorithm that starts matching from the beginning instead of the end.
+  // Whatever trailing data is left after running this algorithm is added to
+  // the lookbehind buffer.
+  while (
+    pos < len &&
+    (
+      data[pos] !== needle[0] ||
+      (
+        (Buffer.compare(
+          data.subarray(pos, pos + len - pos),
+          needle.subarray(0, len - pos)
+        ) !== 0)
+      )
+    )
+  ) {
+    ++pos
+  }
+  if (pos < len) {
+    data.copy(this._lookbehind, 0, pos, pos + (len - pos))
+    this._lookbehind_size = len - pos
+  }
+
+  // Everything until pos is guaranteed not to contain needle data.
+  if (pos > 0) { this.emit('info', false, data, this._bufpos, pos < len ? pos : len) }
+
+  this._bufpos = len
+  return len
+}
+
+SBMH.prototype._sbmh_lookup_char = function (data, pos) {
+  return (pos < 0)
+    ? this._lookbehind[this._lookbehind_size + pos]
+    : data[pos]
+}
+
+SBMH.prototype._sbmh_memcmp = function (data, pos, len) {
+  for (var i = 0; i < len; ++i) { // eslint-disable-line no-var
+    if (this._sbmh_lookup_char(data, pos + i) !== this._needle[i]) { return false }
+  }
+  return true
+}
+
+module.exports = SBMH
+
+
+/***/ }),
+
+/***/ 727:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const WritableStream = (__nccwpck_require__(4492).Writable)
+const { inherits } = __nccwpck_require__(7261)
+const Dicer = __nccwpck_require__(2960)
+
+const MultipartParser = __nccwpck_require__(2183)
+const UrlencodedParser = __nccwpck_require__(8306)
+const parseParams = __nccwpck_require__(1854)
+
+function Busboy (opts) {
+  if (!(this instanceof Busboy)) { return new Busboy(opts) }
+
+  if (typeof opts !== 'object') {
+    throw new TypeError('Busboy expected an options-Object.')
+  }
+  if (typeof opts.headers !== 'object') {
+    throw new TypeError('Busboy expected an options-Object with headers-attribute.')
+  }
+  if (typeof opts.headers['content-type'] !== 'string') {
+    throw new TypeError('Missing Content-Type-header.')
+  }
+
+  const {
+    headers,
+    ...streamOptions
+  } = opts
+
+  this.opts = {
+    autoDestroy: false,
+    ...streamOptions
+  }
+  WritableStream.call(this, this.opts)
+
+  this._done = false
+  this._parser = this.getParserByHeaders(headers)
+  this._finished = false
+}
+inherits(Busboy, WritableStream)
+
+Busboy.prototype.emit = function (ev) {
+  if (ev === 'finish') {
+    if (!this._done) {
+      this._parser?.end()
+      return
+    } else if (this._finished) {
+      return
+    }
+    this._finished = true
+  }
+  WritableStream.prototype.emit.apply(this, arguments)
+}
+
+Busboy.prototype.getParserByHeaders = function (headers) {
+  const parsed = parseParams(headers['content-type'])
+
+  const cfg = {
+    defCharset: this.opts.defCharset,
+    fileHwm: this.opts.fileHwm,
+    headers,
+    highWaterMark: this.opts.highWaterMark,
+    isPartAFile: this.opts.isPartAFile,
+    limits: this.opts.limits,
+    parsedConType: parsed,
+    preservePath: this.opts.preservePath
+  }
+
+  if (MultipartParser.detect.test(parsed[0])) {
+    return new MultipartParser(this, cfg)
+  }
+  if (UrlencodedParser.detect.test(parsed[0])) {
+    return new UrlencodedParser(this, cfg)
+  }
+  throw new Error('Unsupported Content-Type.')
+}
+
+Busboy.prototype._write = function (chunk, encoding, cb) {
+  this._parser.write(chunk, cb)
+}
+
+module.exports = Busboy
+module.exports["default"] = Busboy
+module.exports.Busboy = Busboy
+
+module.exports.Dicer = Dicer
+
+
+/***/ }),
+
+/***/ 2183:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+// TODO:
+//  * support 1 nested multipart level
+//    (see second multipart example here:
+//     http://www.w3.org/TR/html401/interact/forms.html#didx-multipartform-data)
+//  * support limits.fieldNameSize
+//     -- this will require modifications to utils.parseParams
+
+const { Readable } = __nccwpck_require__(4492)
+const { inherits } = __nccwpck_require__(7261)
+
+const Dicer = __nccwpck_require__(2960)
+
+const parseParams = __nccwpck_require__(1854)
+const decodeText = __nccwpck_require__(4619)
+const basename = __nccwpck_require__(8647)
+const getLimit = __nccwpck_require__(1467)
+
+const RE_BOUNDARY = /^boundary$/i
+const RE_FIELD = /^form-data$/i
+const RE_CHARSET = /^charset$/i
+const RE_FILENAME = /^filename$/i
+const RE_NAME = /^name$/i
+
+Multipart.detect = /^multipart\/form-data/i
+function Multipart (boy, cfg) {
+  let i
+  let len
+  const self = this
+  let boundary
+  const limits = cfg.limits
+  const isPartAFile = cfg.isPartAFile || ((fieldName, contentType, fileName) => (contentType === 'application/octet-stream' || fileName !== undefined))
+  const parsedConType = cfg.parsedConType || []
+  const defCharset = cfg.defCharset || 'utf8'
+  const preservePath = cfg.preservePath
+  const fileOpts = { highWaterMark: cfg.fileHwm }
+
+  for (i = 0, len = parsedConType.length; i < len; ++i) {
+    if (Array.isArray(parsedConType[i]) &&
+      RE_BOUNDARY.test(parsedConType[i][0])) {
+      boundary = parsedConType[i][1]
+      break
+    }
+  }
+
+  function checkFinished () {
+    if (nends === 0 && finished && !boy._done) {
+      finished = false
+      self.end()
+    }
+  }
+
+  if (typeof boundary !== 'string') { throw new Error('Multipart: Boundary not found') }
+
+  const fieldSizeLimit = getLimit(limits, 'fieldSize', 1 * 1024 * 1024)
+  const fileSizeLimit = getLimit(limits, 'fileSize', Infinity)
+  const filesLimit = getLimit(limits, 'files', Infinity)
+  const fieldsLimit = getLimit(limits, 'fields', Infinity)
+  const partsLimit = getLimit(limits, 'parts', Infinity)
+  const headerPairsLimit = getLimit(limits, 'headerPairs', 2000)
+  const headerSizeLimit = getLimit(limits, 'headerSize', 80 * 1024)
+
+  let nfiles = 0
+  let nfields = 0
+  let nends = 0
+  let curFile
+  let curField
+  let finished = false
+
+  this._needDrain = false
+  this._pause = false
+  this._cb = undefined
+  this._nparts = 0
+  this._boy = boy
+
+  const parserCfg = {
+    boundary,
+    maxHeaderPairs: headerPairsLimit,
+    maxHeaderSize: headerSizeLimit,
+    partHwm: fileOpts.highWaterMark,
+    highWaterMark: cfg.highWaterMark
+  }
+
+  this.parser = new Dicer(parserCfg)
+  this.parser.on('drain', function () {
+    self._needDrain = false
+    if (self._cb && !self._pause) {
+      const cb = self._cb
+      self._cb = undefined
+      cb()
+    }
+  }).on('part', function onPart (part) {
+    if (++self._nparts > partsLimit) {
+      self.parser.removeListener('part', onPart)
+      self.parser.on('part', skipPart)
+      boy.hitPartsLimit = true
+      boy.emit('partsLimit')
+      return skipPart(part)
+    }
+
+    // hack because streams2 _always_ doesn't emit 'end' until nextTick, so let
+    // us emit 'end' early since we know the part has ended if we are already
+    // seeing the next part
+    if (curField) {
+      const field = curField
+      field.emit('end')
+      field.removeAllListeners('end')
+    }
+
+    part.on('header', function (header) {
+      let contype
+      let fieldname
+      let parsed
+      let charset
+      let encoding
+      let filename
+      let nsize = 0
+
+      if (header['content-type']) {
+        parsed = parseParams(header['content-type'][0])
+        if (parsed[0]) {
+          contype = parsed[0].toLowerCase()
+          for (i = 0, len = parsed.length; i < len; ++i) {
+            if (RE_CHARSET.test(parsed[i][0])) {
+              charset = parsed[i][1].toLowerCase()
+              break
+            }
+          }
+        }
+      }
+
+      if (contype === undefined) { contype = 'text/plain' }
+      if (charset === undefined) { charset = defCharset }
+
+      if (header['content-disposition']) {
+        parsed = parseParams(header['content-disposition'][0])
+        if (!RE_FIELD.test(parsed[0])) { return skipPart(part) }
+        for (i = 0, len = parsed.length; i < len; ++i) {
+          if (RE_NAME.test(parsed[i][0])) {
+            fieldname = parsed[i][1]
+          } else if (RE_FILENAME.test(parsed[i][0])) {
+            filename = parsed[i][1]
+            if (!preservePath) { filename = basename(filename) }
+          }
+        }
+      } else { return skipPart(part) }
+
+      if (header['content-transfer-encoding']) { encoding = header['content-transfer-encoding'][0].toLowerCase() } else { encoding = '7bit' }
+
+      let onData,
+        onEnd
+
+      if (isPartAFile(fieldname, contype, filename)) {
+        // file/binary field
+        if (nfiles === filesLimit) {
+          if (!boy.hitFilesLimit) {
+            boy.hitFilesLimit = true
+            boy.emit('filesLimit')
+          }
+          return skipPart(part)
+        }
+
+        ++nfiles
+
+        if (boy.listenerCount('file') === 0) {
+          self.parser._ignore()
+          return
+        }
+
+        ++nends
+        const file = new FileStream(fileOpts)
+        curFile = file
+        file.on('end', function () {
+          --nends
+          self._pause = false
+          checkFinished()
+          if (self._cb && !self._needDrain) {
+            const cb = self._cb
+            self._cb = undefined
+            cb()
+          }
+        })
+        file._read = function (n) {
+          if (!self._pause) { return }
+          self._pause = false
+          if (self._cb && !self._needDrain) {
+            const cb = self._cb
+            self._cb = undefined
+            cb()
+          }
+        }
+        boy.emit('file', fieldname, file, filename, encoding, contype)
+
+        onData = function (data) {
+          if ((nsize += data.length) > fileSizeLimit) {
+            const extralen = fileSizeLimit - nsize + data.length
+            if (extralen > 0) { file.push(data.slice(0, extralen)) }
+            file.truncated = true
+            file.bytesRead = fileSizeLimit
+            part.removeAllListeners('data')
+            file.emit('limit')
+            return
+          } else if (!file.push(data)) { self._pause = true }
+
+          file.bytesRead = nsize
+        }
+
+        onEnd = function () {
+          curFile = undefined
+          file.push(null)
+        }
+      } else {
+        // non-file field
+        if (nfields === fieldsLimit) {
+          if (!boy.hitFieldsLimit) {
+            boy.hitFieldsLimit = true
+            boy.emit('fieldsLimit')
+          }
+          return skipPart(part)
+        }
+
+        ++nfields
+        ++nends
+        let buffer = ''
+        let truncated = false
+        curField = part
+
+        onData = function (data) {
+          if ((nsize += data.length) > fieldSizeLimit) {
+            const extralen = (fieldSizeLimit - (nsize - data.length))
+            buffer += data.toString('binary', 0, extralen)
+            truncated = true
+            part.removeAllListeners('data')
+          } else { buffer += data.toString('binary') }
+        }
+
+        onEnd = function () {
+          curField = undefined
+          if (buffer.length) { buffer = decodeText(buffer, 'binary', charset) }
+          boy.emit('field', fieldname, buffer, false, truncated, encoding, contype)
+          --nends
+          checkFinished()
+        }
+      }
+
+      /* As of node@2efe4ab761666 (v0.10.29+/v0.11.14+), busboy had become
+         broken. Streams2/streams3 is a huge black box of confusion, but
+         somehow overriding the sync state seems to fix things again (and still
+         seems to work for previous node versions).
+      */
+      part._readableState.sync = false
+
+      part.on('data', onData)
+      part.on('end', onEnd)
+    }).on('error', function (err) {
+      if (curFile) { curFile.emit('error', err) }
+    })
+  }).on('error', function (err) {
+    boy.emit('error', err)
+  }).on('finish', function () {
+    finished = true
+    checkFinished()
+  })
+}
+
+Multipart.prototype.write = function (chunk, cb) {
+  const r = this.parser.write(chunk)
+  if (r && !this._pause) {
+    cb()
+  } else {
+    this._needDrain = !r
+    this._cb = cb
+  }
+}
+
+Multipart.prototype.end = function () {
+  const self = this
+
+  if (self.parser.writable) {
+    self.parser.end()
+  } else if (!self._boy._done) {
+    process.nextTick(function () {
+      self._boy._done = true
+      self._boy.emit('finish')
+    })
+  }
+}
+
+function skipPart (part) {
+  part.resume()
+}
+
+function FileStream (opts) {
+  Readable.call(this, opts)
+
+  this.bytesRead = 0
+
+  this.truncated = false
+}
+
+inherits(FileStream, Readable)
+
+FileStream.prototype._read = function (n) {}
+
+module.exports = Multipart
+
+
+/***/ }),
+
+/***/ 8306:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+
+
+const Decoder = __nccwpck_require__(7100)
+const decodeText = __nccwpck_require__(4619)
+const getLimit = __nccwpck_require__(1467)
+
+const RE_CHARSET = /^charset$/i
+
+UrlEncoded.detect = /^application\/x-www-form-urlencoded/i
+function UrlEncoded (boy, cfg) {
+  const limits = cfg.limits
+  const parsedConType = cfg.parsedConType
+  this.boy = boy
+
+  this.fieldSizeLimit = getLimit(limits, 'fieldSize', 1 * 1024 * 1024)
+  this.fieldNameSizeLimit = getLimit(limits, 'fieldNameSize', 100)
+  this.fieldsLimit = getLimit(limits, 'fields', Infinity)
+
+  let charset
+  for (var i = 0, len = parsedConType.length; i < len; ++i) { // eslint-disable-line no-var
+    if (Array.isArray(parsedConType[i]) &&
+        RE_CHARSET.test(parsedConType[i][0])) {
+      charset = parsedConType[i][1].toLowerCase()
+      break
+    }
+  }
+
+  if (charset === undefined) { charset = cfg.defCharset || 'utf8' }
+
+  this.decoder = new Decoder()
+  this.charset = charset
+  this._fields = 0
+  this._state = 'key'
+  this._checkingBytes = true
+  this._bytesKey = 0
+  this._bytesVal = 0
+  this._key = ''
+  this._val = ''
+  this._keyTrunc = false
+  this._valTrunc = false
+  this._hitLimit = false
+}
+
+UrlEncoded.prototype.write = function (data, cb) {
+  if (this._fields === this.fieldsLimit) {
+    if (!this.boy.hitFieldsLimit) {
+      this.boy.hitFieldsLimit = true
+      this.boy.emit('fieldsLimit')
+    }
+    return cb()
+  }
+
+  let idxeq; let idxamp; let i; let p = 0; const len = data.length
+
+  while (p < len) {
+    if (this._state === 'key') {
+      idxeq = idxamp = undefined
+      for (i = p; i < len; ++i) {
+        if (!this._checkingBytes) { ++p }
+        if (data[i] === 0x3D/* = */) {
+          idxeq = i
+          break
+        } else if (data[i] === 0x26/* & */) {
+          idxamp = i
+          break
+        }
+        if (this._checkingBytes && this._bytesKey === this.fieldNameSizeLimit) {
+          this._hitLimit = true
+          break
+        } else if (this._checkingBytes) { ++this._bytesKey }
+      }
+
+      if (idxeq !== undefined) {
+        // key with assignment
+        if (idxeq > p) { this._key += this.decoder.write(data.toString('binary', p, idxeq)) }
+        this._state = 'val'
+
+        this._hitLimit = false
+        this._checkingBytes = true
+        this._val = ''
+        this._bytesVal = 0
+        this._valTrunc = false
+        this.decoder.reset()
+
+        p = idxeq + 1
+      } else if (idxamp !== undefined) {
+        // key with no assignment
+        ++this._fields
+        let key; const keyTrunc = this._keyTrunc
+        if (idxamp > p) { key = (this._key += this.decoder.write(data.toString('binary', p, idxamp))) } else { key = this._key }
+
+        this._hitLimit = false
+        this._checkingBytes = true
+        this._key = ''
+        this._bytesKey = 0
+        this._keyTrunc = false
+        this.decoder.reset()
+
+        if (key.length) {
+          this.boy.emit('field', decodeText(key, 'binary', this.charset),
+            '',
+            keyTrunc,
+            false)
+        }
+
+        p = idxamp + 1
+        if (this._fields === this.fieldsLimit) { return cb() }
+      } else if (this._hitLimit) {
+        // we may not have hit the actual limit if there are encoded bytes...
+        if (i > p) { this._key += this.decoder.write(data.toString('binary', p, i)) }
+        p = i
+        if ((this._bytesKey = this._key.length) === this.fieldNameSizeLimit) {
+          // yep, we actually did hit the limit
+          this._checkingBytes = false
+          this._keyTrunc = true
+        }
+      } else {
+        if (p < len) { this._key += this.decoder.write(data.toString('binary', p)) }
+        p = len
+      }
+    } else {
+      idxamp = undefined
+      for (i = p; i < len; ++i) {
+        if (!this._checkingBytes) { ++p }
+        if (data[i] === 0x26/* & */) {
+          idxamp = i
+          break
+        }
+        if (this._checkingBytes && this._bytesVal === this.fieldSizeLimit) {
+          this._hitLimit = true
+          break
+        } else if (this._checkingBytes) { ++this._bytesVal }
+      }
+
+      if (idxamp !== undefined) {
+        ++this._fields
+        if (idxamp > p) { this._val += this.decoder.write(data.toString('binary', p, idxamp)) }
+        this.boy.emit('field', decodeText(this._key, 'binary', this.charset),
+          decodeText(this._val, 'binary', this.charset),
+          this._keyTrunc,
+          this._valTrunc)
+        this._state = 'key'
+
+        this._hitLimit = false
+        this._checkingBytes = true
+        this._key = ''
+        this._bytesKey = 0
+        this._keyTrunc = false
+        this.decoder.reset()
+
+        p = idxamp + 1
+        if (this._fields === this.fieldsLimit) { return cb() }
+      } else if (this._hitLimit) {
+        // we may not have hit the actual limit if there are encoded bytes...
+        if (i > p) { this._val += this.decoder.write(data.toString('binary', p, i)) }
+        p = i
+        if ((this._val === '' && this.fieldSizeLimit === 0) ||
+            (this._bytesVal = this._val.length) === this.fieldSizeLimit) {
+          // yep, we actually did hit the limit
+          this._checkingBytes = false
+          this._valTrunc = true
+        }
+      } else {
+        if (p < len) { this._val += this.decoder.write(data.toString('binary', p)) }
+        p = len
+      }
+    }
+  }
+  cb()
+}
+
+UrlEncoded.prototype.end = function () {
+  if (this.boy._done) { return }
+
+  if (this._state === 'key' && this._key.length > 0) {
+    this.boy.emit('field', decodeText(this._key, 'binary', this.charset),
+      '',
+      this._keyTrunc,
+      false)
+  } else if (this._state === 'val') {
+    this.boy.emit('field', decodeText(this._key, 'binary', this.charset),
+      decodeText(this._val, 'binary', this.charset),
+      this._keyTrunc,
+      this._valTrunc)
+  }
+  this.boy._done = true
+  this.boy.emit('finish')
+}
+
+module.exports = UrlEncoded
+
+
+/***/ }),
+
+/***/ 7100:
+/***/ ((module) => {
+
+"use strict";
+
+
+const RE_PLUS = /\+/g
+
+const HEX = [
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0,
+  0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+]
+
+function Decoder () {
+  this.buffer = undefined
+}
+Decoder.prototype.write = function (str) {
+  // Replace '+' with ' ' before decoding
+  str = str.replace(RE_PLUS, ' ')
+  let res = ''
+  let i = 0; let p = 0; const len = str.length
+  for (; i < len; ++i) {
+    if (this.buffer !== undefined) {
+      if (!HEX[str.charCodeAt(i)]) {
+        res += '%' + this.buffer
+        this.buffer = undefined
+        --i // retry character
+      } else {
+        this.buffer += str[i]
+        ++p
+        if (this.buffer.length === 2) {
+          res += String.fromCharCode(parseInt(this.buffer, 16))
+          this.buffer = undefined
+        }
+      }
+    } else if (str[i] === '%') {
+      if (i > p) {
+        res += str.substring(p, i)
+        p = i
+      }
+      this.buffer = ''
+      ++p
+    }
+  }
+  if (p < len && this.buffer === undefined) { res += str.substring(p) }
+  return res
+}
+Decoder.prototype.reset = function () {
+  this.buffer = undefined
+}
+
+module.exports = Decoder
+
+
+/***/ }),
+
+/***/ 8647:
+/***/ ((module) => {
+
+"use strict";
+
+
+module.exports = function basename (path) {
+  if (typeof path !== 'string') { return '' }
+  for (var i = path.length - 1; i >= 0; --i) { // eslint-disable-line no-var
+    switch (path.charCodeAt(i)) {
+      case 0x2F: // '/'
+      case 0x5C: // '\'
+        path = path.slice(i + 1)
+        return (path === '..' || path === '.' ? '' : path)
+    }
+  }
+  return (path === '..' || path === '.' ? '' : path)
+}
+
+
+/***/ }),
+
+/***/ 4619:
+/***/ (function(module) {
+
+"use strict";
+
+
+// Node has always utf-8
+const utf8Decoder = new TextDecoder('utf-8')
+const textDecoders = new Map([
+  ['utf-8', utf8Decoder],
+  ['utf8', utf8Decoder]
+])
+
+function getDecoder (charset) {
+  let lc
+  while (true) {
+    switch (charset) {
+      case 'utf-8':
+      case 'utf8':
+        return decoders.utf8
+      case 'latin1':
+      case 'ascii': // TODO: Make these a separate, strict decoder?
+      case 'us-ascii':
+      case 'iso-8859-1':
+      case 'iso8859-1':
+      case 'iso88591':
+      case 'iso_8859-1':
+      case 'windows-1252':
+      case 'iso_8859-1:1987':
+      case 'cp1252':
+      case 'x-cp1252':
+        return decoders.latin1
+      case 'utf16le':
+      case 'utf-16le':
+      case 'ucs2':
+      case 'ucs-2':
+        return decoders.utf16le
+      case 'base64':
+        return decoders.base64
+      default:
+        if (lc === undefined) {
+          lc = true
+          charset = charset.toLowerCase()
+          continue
+        }
+        return decoders.other.bind(charset)
+    }
+  }
+}
+
+const decoders = {
+  utf8: (data, sourceEncoding) => {
+    if (data.length === 0) {
+      return ''
+    }
+    if (typeof data === 'string') {
+      data = Buffer.from(data, sourceEncoding)
+    }
+    return data.utf8Slice(0, data.length)
+  },
+
+  latin1: (data, sourceEncoding) => {
+    if (data.length === 0) {
+      return ''
+    }
+    if (typeof data === 'string') {
+      return data
+    }
+    return data.latin1Slice(0, data.length)
+  },
+
+  utf16le: (data, sourceEncoding) => {
+    if (data.length === 0) {
+      return ''
+    }
+    if (typeof data === 'string') {
+      data = Buffer.from(data, sourceEncoding)
+    }
+    return data.ucs2Slice(0, data.length)
+  },
+
+  base64: (data, sourceEncoding) => {
+    if (data.length === 0) {
+      return ''
+    }
+    if (typeof data === 'string') {
+      data = Buffer.from(data, sourceEncoding)
+    }
+    return data.base64Slice(0, data.length)
+  },
+
+  other: (data, sourceEncoding) => {
+    if (data.length === 0) {
+      return ''
+    }
+    if (typeof data === 'string') {
+      data = Buffer.from(data, sourceEncoding)
+    }
+
+    if (textDecoders.has(this.toString())) {
+      try {
+        return textDecoders.get(this).decode(data)
+      } catch {}
+    }
+    return typeof data === 'string'
+      ? data
+      : data.toString()
+  }
+}
+
+function decodeText (text, sourceEncoding, destEncoding) {
+  if (text) {
+    return getDecoder(destEncoding)(text, sourceEncoding)
+  }
+  return text
+}
+
+module.exports = decodeText
+
+
+/***/ }),
+
+/***/ 1467:
+/***/ ((module) => {
+
+"use strict";
+
+
+module.exports = function getLimit (limits, name, defaultLimit) {
+  if (
+    !limits ||
+    limits[name] === undefined ||
+    limits[name] === null
+  ) { return defaultLimit }
+
+  if (
+    typeof limits[name] !== 'number' ||
+    isNaN(limits[name])
+  ) { throw new TypeError('Limit ' + name + ' is not a valid number') }
+
+  return limits[name]
+}
+
+
+/***/ }),
+
+/***/ 1854:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+"use strict";
+/* eslint-disable object-property-newline */
+
+
+const decodeText = __nccwpck_require__(4619)
+
+const RE_ENCODED = /%[a-fA-F0-9][a-fA-F0-9]/g
+
+const EncodedLookup = {
+  '%00': '\x00', '%01': '\x01', '%02': '\x02', '%03': '\x03', '%04': '\x04',
+  '%05': '\x05', '%06': '\x06', '%07': '\x07', '%08': '\x08', '%09': '\x09',
+  '%0a': '\x0a', '%0A': '\x0a', '%0b': '\x0b', '%0B': '\x0b', '%0c': '\x0c',
+  '%0C': '\x0c', '%0d': '\x0d', '%0D': '\x0d', '%0e': '\x0e', '%0E': '\x0e',
+  '%0f': '\x0f', '%0F': '\x0f', '%10': '\x10', '%11': '\x11', '%12': '\x12',
+  '%13': '\x13', '%14': '\x14', '%15': '\x15', '%16': '\x16', '%17': '\x17',
+  '%18': '\x18', '%19': '\x19', '%1a': '\x1a', '%1A': '\x1a', '%1b': '\x1b',
+  '%1B': '\x1b', '%1c': '\x1c', '%1C': '\x1c', '%1d': '\x1d', '%1D': '\x1d',
+  '%1e': '\x1e', '%1E': '\x1e', '%1f': '\x1f', '%1F': '\x1f', '%20': '\x20',
+  '%21': '\x21', '%22': '\x22', '%23': '\x23', '%24': '\x24', '%25': '\x25',
+  '%26': '\x26', '%27': '\x27', '%28': '\x28', '%29': '\x29', '%2a': '\x2a',
+  '%2A': '\x2a', '%2b': '\x2b', '%2B': '\x2b', '%2c': '\x2c', '%2C': '\x2c',
+  '%2d': '\x2d', '%2D': '\x2d', '%2e': '\x2e', '%2E': '\x2e', '%2f': '\x2f',
+  '%2F': '\x2f', '%30': '\x30', '%31': '\x31', '%32': '\x32', '%33': '\x33',
+  '%34': '\x34', '%35': '\x35', '%36': '\x36', '%37': '\x37', '%38': '\x38',
+  '%39': '\x39', '%3a': '\x3a', '%3A': '\x3a', '%3b': '\x3b', '%3B': '\x3b',
+  '%3c': '\x3c', '%3C': '\x3c', '%3d': '\x3d', '%3D': '\x3d', '%3e': '\x3e',
+  '%3E': '\x3e', '%3f': '\x3f', '%3F': '\x3f', '%40': '\x40', '%41': '\x41',
+  '%42': '\x42', '%43': '\x43', '%44': '\x44', '%45': '\x45', '%46': '\x46',
+  '%47': '\x47', '%48': '\x48', '%49': '\x49', '%4a': '\x4a', '%4A': '\x4a',
+  '%4b': '\x4b', '%4B': '\x4b', '%4c': '\x4c', '%4C': '\x4c', '%4d': '\x4d',
+  '%4D': '\x4d', '%4e': '\x4e', '%4E': '\x4e', '%4f': '\x4f', '%4F': '\x4f',
+  '%50': '\x50', '%51': '\x51', '%52': '\x52', '%53': '\x53', '%54': '\x54',
+  '%55': '\x55', '%56': '\x56', '%57': '\x57', '%58': '\x58', '%59': '\x59',
+  '%5a': '\x5a', '%5A': '\x5a', '%5b': '\x5b', '%5B': '\x5b', '%5c': '\x5c',
+  '%5C': '\x5c', '%5d': '\x5d', '%5D': '\x5d', '%5e': '\x5e', '%5E': '\x5e',
+  '%5f': '\x5f', '%5F': '\x5f', '%60': '\x60', '%61': '\x61', '%62': '\x62',
+  '%63': '\x63', '%64': '\x64', '%65': '\x65', '%66': '\x66', '%67': '\x67',
+  '%68': '\x68', '%69': '\x69', '%6a': '\x6a', '%6A': '\x6a', '%6b': '\x6b',
+  '%6B': '\x6b', '%6c': '\x6c', '%6C': '\x6c', '%6d': '\x6d', '%6D': '\x6d',
+  '%6e': '\x6e', '%6E': '\x6e', '%6f': '\x6f', '%6F': '\x6f', '%70': '\x70',
+  '%71': '\x71', '%72': '\x72', '%73': '\x73', '%74': '\x74', '%75': '\x75',
+  '%76': '\x76', '%77': '\x77', '%78': '\x78', '%79': '\x79', '%7a': '\x7a',
+  '%7A': '\x7a', '%7b': '\x7b', '%7B': '\x7b', '%7c': '\x7c', '%7C': '\x7c',
+  '%7d': '\x7d', '%7D': '\x7d', '%7e': '\x7e', '%7E': '\x7e', '%7f': '\x7f',
+  '%7F': '\x7f', '%80': '\x80', '%81': '\x81', '%82': '\x82', '%83': '\x83',
+  '%84': '\x84', '%85': '\x85', '%86': '\x86', '%87': '\x87', '%88': '\x88',
+  '%89': '\x89', '%8a': '\x8a', '%8A': '\x8a', '%8b': '\x8b', '%8B': '\x8b',
+  '%8c': '\x8c', '%8C': '\x8c', '%8d': '\x8d', '%8D': '\x8d', '%8e': '\x8e',
+  '%8E': '\x8e', '%8f': '\x8f', '%8F': '\x8f', '%90': '\x90', '%91': '\x91',
+  '%92': '\x92', '%93': '\x93', '%94': '\x94', '%95': '\x95', '%96': '\x96',
+  '%97': '\x97', '%98': '\x98', '%99': '\x99', '%9a': '\x9a', '%9A': '\x9a',
+  '%9b': '\x9b', '%9B': '\x9b', '%9c': '\x9c', '%9C': '\x9c', '%9d': '\x9d',
+  '%9D': '\x9d', '%9e': '\x9e', '%9E': '\x9e', '%9f': '\x9f', '%9F': '\x9f',
+  '%a0': '\xa0', '%A0': '\xa0', '%a1': '\xa1', '%A1': '\xa1', '%a2': '\xa2',
+  '%A2': '\xa2', '%a3': '\xa3', '%A3': '\xa3', '%a4': '\xa4', '%A4': '\xa4',
+  '%a5': '\xa5', '%A5': '\xa5', '%a6': '\xa6', '%A6': '\xa6', '%a7': '\xa7',
+  '%A7': '\xa7', '%a8': '\xa8', '%A8': '\xa8', '%a9': '\xa9', '%A9': '\xa9',
+  '%aa': '\xaa', '%Aa': '\xaa', '%aA': '\xaa', '%AA': '\xaa', '%ab': '\xab',
+  '%Ab': '\xab', '%aB': '\xab', '%AB': '\xab', '%ac': '\xac', '%Ac': '\xac',
+  '%aC': '\xac', '%AC': '\xac', '%ad': '\xad', '%Ad': '\xad', '%aD': '\xad',
+  '%AD': '\xad', '%ae': '\xae', '%Ae': '\xae', '%aE': '\xae', '%AE': '\xae',
+  '%af': '\xaf', '%Af': '\xaf', '%aF': '\xaf', '%AF': '\xaf', '%b0': '\xb0',
+  '%B0': '\xb0', '%b1': '\xb1', '%B1': '\xb1', '%b2': '\xb2', '%B2': '\xb2',
+  '%b3': '\xb3', '%B3': '\xb3', '%b4': '\xb4', '%B4': '\xb4', '%b5': '\xb5',
+  '%B5': '\xb5', '%b6': '\xb6', '%B6': '\xb6', '%b7': '\xb7', '%B7': '\xb7',
+  '%b8': '\xb8', '%B8': '\xb8', '%b9': '\xb9', '%B9': '\xb9', '%ba': '\xba',
+  '%Ba': '\xba', '%bA': '\xba', '%BA': '\xba', '%bb': '\xbb', '%Bb': '\xbb',
+  '%bB': '\xbb', '%BB': '\xbb', '%bc': '\xbc', '%Bc': '\xbc', '%bC': '\xbc',
+  '%BC': '\xbc', '%bd': '\xbd', '%Bd': '\xbd', '%bD': '\xbd', '%BD': '\xbd',
+  '%be': '\xbe', '%Be': '\xbe', '%bE': '\xbe', '%BE': '\xbe', '%bf': '\xbf',
+  '%Bf': '\xbf', '%bF': '\xbf', '%BF': '\xbf', '%c0': '\xc0', '%C0': '\xc0',
+  '%c1': '\xc1', '%C1': '\xc1', '%c2': '\xc2', '%C2': '\xc2', '%c3': '\xc3',
+  '%C3': '\xc3', '%c4': '\xc4', '%C4': '\xc4', '%c5': '\xc5', '%C5': '\xc5',
+  '%c6': '\xc6', '%C6': '\xc6', '%c7': '\xc7', '%C7': '\xc7', '%c8': '\xc8',
+  '%C8': '\xc8', '%c9': '\xc9', '%C9': '\xc9', '%ca': '\xca', '%Ca': '\xca',
+  '%cA': '\xca', '%CA': '\xca', '%cb': '\xcb', '%Cb': '\xcb', '%cB': '\xcb',
+  '%CB': '\xcb', '%cc': '\xcc', '%Cc': '\xcc', '%cC': '\xcc', '%CC': '\xcc',
+  '%cd': '\xcd', '%Cd': '\xcd', '%cD': '\xcd', '%CD': '\xcd', '%ce': '\xce',
+  '%Ce': '\xce', '%cE': '\xce', '%CE': '\xce', '%cf': '\xcf', '%Cf': '\xcf',
+  '%cF': '\xcf', '%CF': '\xcf', '%d0': '\xd0', '%D0': '\xd0', '%d1': '\xd1',
+  '%D1': '\xd1', '%d2': '\xd2', '%D2': '\xd2', '%d3': '\xd3', '%D3': '\xd3',
+  '%d4': '\xd4', '%D4': '\xd4', '%d5': '\xd5', '%D5': '\xd5', '%d6': '\xd6',
+  '%D6': '\xd6', '%d7': '\xd7', '%D7': '\xd7', '%d8': '\xd8', '%D8': '\xd8',
+  '%d9': '\xd9', '%D9': '\xd9', '%da': '\xda', '%Da': '\xda', '%dA': '\xda',
+  '%DA': '\xda', '%db': '\xdb', '%Db': '\xdb', '%dB': '\xdb', '%DB': '\xdb',
+  '%dc': '\xdc', '%Dc': '\xdc', '%dC': '\xdc', '%DC': '\xdc', '%dd': '\xdd',
+  '%Dd': '\xdd', '%dD': '\xdd', '%DD': '\xdd', '%de': '\xde', '%De': '\xde',
+  '%dE': '\xde', '%DE': '\xde', '%df': '\xdf', '%Df': '\xdf', '%dF': '\xdf',
+  '%DF': '\xdf', '%e0': '\xe0', '%E0': '\xe0', '%e1': '\xe1', '%E1': '\xe1',
+  '%e2': '\xe2', '%E2': '\xe2', '%e3': '\xe3', '%E3': '\xe3', '%e4': '\xe4',
+  '%E4': '\xe4', '%e5': '\xe5', '%E5': '\xe5', '%e6': '\xe6', '%E6': '\xe6',
+  '%e7': '\xe7', '%E7': '\xe7', '%e8': '\xe8', '%E8': '\xe8', '%e9': '\xe9',
+  '%E9': '\xe9', '%ea': '\xea', '%Ea': '\xea', '%eA': '\xea', '%EA': '\xea',
+  '%eb': '\xeb', '%Eb': '\xeb', '%eB': '\xeb', '%EB': '\xeb', '%ec': '\xec',
+  '%Ec': '\xec', '%eC': '\xec', '%EC': '\xec', '%ed': '\xed', '%Ed': '\xed',
+  '%eD': '\xed', '%ED': '\xed', '%ee': '\xee', '%Ee': '\xee', '%eE': '\xee',
+  '%EE': '\xee', '%ef': '\xef', '%Ef': '\xef', '%eF': '\xef', '%EF': '\xef',
+  '%f0': '\xf0', '%F0': '\xf0', '%f1': '\xf1', '%F1': '\xf1', '%f2': '\xf2',
+  '%F2': '\xf2', '%f3': '\xf3', '%F3': '\xf3', '%f4': '\xf4', '%F4': '\xf4',
+  '%f5': '\xf5', '%F5': '\xf5', '%f6': '\xf6', '%F6': '\xf6', '%f7': '\xf7',
+  '%F7': '\xf7', '%f8': '\xf8', '%F8': '\xf8', '%f9': '\xf9', '%F9': '\xf9',
+  '%fa': '\xfa', '%Fa': '\xfa', '%fA': '\xfa', '%FA': '\xfa', '%fb': '\xfb',
+  '%Fb': '\xfb', '%fB': '\xfb', '%FB': '\xfb', '%fc': '\xfc', '%Fc': '\xfc',
+  '%fC': '\xfc', '%FC': '\xfc', '%fd': '\xfd', '%Fd': '\xfd', '%fD': '\xfd',
+  '%FD': '\xfd', '%fe': '\xfe', '%Fe': '\xfe', '%fE': '\xfe', '%FE': '\xfe',
+  '%ff': '\xff', '%Ff': '\xff', '%fF': '\xff', '%FF': '\xff'
+}
+
+function encodedReplacer (match) {
+  return EncodedLookup[match]
+}
+
+const STATE_KEY = 0
+const STATE_VALUE = 1
+const STATE_CHARSET = 2
+const STATE_LANG = 3
+
+function parseParams (str) {
+  const res = []
+  let state = STATE_KEY
+  let charset = ''
+  let inquote = false
+  let escaping = false
+  let p = 0
+  let tmp = ''
+  const len = str.length
+
+  for (var i = 0; i < len; ++i) { // eslint-disable-line no-var
+    const char = str[i]
+    if (char === '\\' && inquote) {
+      if (escaping) { escaping = false } else {
+        escaping = true
+        continue
+      }
+    } else if (char === '"') {
+      if (!escaping) {
+        if (inquote) {
+          inquote = false
+          state = STATE_KEY
+        } else { inquote = true }
+        continue
+      } else { escaping = false }
+    } else {
+      if (escaping && inquote) { tmp += '\\' }
+      escaping = false
+      if ((state === STATE_CHARSET || state === STATE_LANG) && char === "'") {
+        if (state === STATE_CHARSET) {
+          state = STATE_LANG
+          charset = tmp.substring(1)
+        } else { state = STATE_VALUE }
+        tmp = ''
+        continue
+      } else if (state === STATE_KEY &&
+        (char === '*' || char === '=') &&
+        res.length) {
+        state = char === '*'
+          ? STATE_CHARSET
+          : STATE_VALUE
+        res[p] = [tmp, undefined]
+        tmp = ''
+        continue
+      } else if (!inquote && char === ';') {
+        state = STATE_KEY
+        if (charset) {
+          if (tmp.length) {
+            tmp = decodeText(tmp.replace(RE_ENCODED, encodedReplacer),
+              'binary',
+              charset)
+          }
+          charset = ''
+        } else if (tmp.length) {
+          tmp = decodeText(tmp, 'binary', 'utf8')
+        }
+        if (res[p] === undefined) { res[p] = tmp } else { res[p][1] = tmp }
+        tmp = ''
+        ++p
+        continue
+      } else if (!inquote && (char === ' ' || char === '\t')) { continue }
+    }
+    tmp += char
+  }
+  if (charset && tmp.length) {
+    tmp = decodeText(tmp.replace(RE_ENCODED, encodedReplacer),
+      'binary',
+      charset)
+  } else if (tmp) {
+    tmp = decodeText(tmp, 'binary', 'utf8')
+  }
+
+  if (res[p] === undefined) {
+    if (tmp) { res[p] = tmp }
+  } else { res[p][1] = tmp }
+
+  return res
+}
+
+module.exports = parseParams
+
+
+/***/ }),
+
+/***/ 2401:
 /***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __nccwpck_require__) => {
 
 "use strict";
@@ -38262,14 +39055,55 @@ const primitiveTypeNames = [
 function isPrimitiveTypeName(name) {
     return primitiveTypeNames.includes(name);
 }
-// eslint-disable-next-line @typescript-eslint/ban-types
-function isOfType(type) {
-    return (value) => typeof value === type;
-}
-const { toString: dist_toString } = Object.prototype;
+const assertionTypeDescriptions = [
+    'positive number',
+    'negative number',
+    'Class',
+    'string with a number',
+    'null or undefined',
+    'Iterable',
+    'AsyncIterable',
+    'native Promise',
+    'EnumCase',
+    'string with a URL',
+    'truthy',
+    'falsy',
+    'primitive',
+    'integer',
+    'plain object',
+    'TypedArray',
+    'array-like',
+    'tuple-like',
+    'Node.js Stream',
+    'infinite number',
+    'empty array',
+    'non-empty array',
+    'empty string',
+    'empty string or whitespace',
+    'non-empty string',
+    'non-empty string and not whitespace',
+    'empty object',
+    'non-empty object',
+    'empty set',
+    'non-empty set',
+    'empty map',
+    'non-empty map',
+    'PropertyKey',
+    'even integer',
+    'odd integer',
+    'T',
+    'in range',
+    'predicate returns truthy for any value',
+    'predicate returns truthy for all values',
+    'valid Date',
+    'valid length',
+    'whitespace string',
+    ...objectTypeNames,
+    ...primitiveTypeNames,
+];
 const getObjectType = (value) => {
-    const objectTypeName = dist_toString.call(value).slice(8, -1);
-    if (/HTML\w+Element/.test(objectTypeName) && is.domElement(value)) {
+    const objectTypeName = Object.prototype.toString.call(value).slice(8, -1);
+    if (/HTML\w+Element/.test(objectTypeName) && isHtmlElement(value)) {
         return 'HTMLElement';
     }
     if (isObjectTypeName(objectTypeName)) {
@@ -38277,8 +39111,7 @@ const getObjectType = (value) => {
     }
     return undefined;
 };
-const isObjectOfType = (type) => (value) => getObjectType(value) === type;
-function is(value) {
+function detect(value) {
     if (value === null) {
         return 'null';
     }
@@ -38306,13 +39139,13 @@ function is(value) {
         }
         default:
     }
-    if (is.observable(value)) {
+    if (isObservable(value)) {
         return 'Observable';
     }
-    if (is.array(value)) {
+    if (isArray(value)) {
         return 'Array';
     }
-    if (is.buffer(value)) {
+    if (isBuffer(value)) {
         return 'Buffer';
     }
     const tagType = getObjectType(value);
@@ -38324,122 +39157,237 @@ function is(value) {
     }
     return 'Object';
 }
-is.undefined = isOfType('undefined');
-is.string = isOfType('string');
-const isNumberType = isOfType('number');
-is.number = (value) => isNumberType(value) && !is.nan(value);
-is.positiveNumber = (value) => is.number(value) && value > 0;
-is.negativeNumber = (value) => is.number(value) && value < 0;
-is.bigint = isOfType('bigint');
-// eslint-disable-next-line @typescript-eslint/ban-types
-is.function_ = isOfType('function');
-// eslint-disable-next-line @typescript-eslint/ban-types
-is.null_ = (value) => value === null;
-is.class_ = (value) => is.function_(value) && value.toString().startsWith('class ');
-is.boolean = (value) => value === true || value === false;
-is.symbol = isOfType('symbol');
-is.numericString = (value) => is.string(value) && !is.emptyStringOrWhitespace(value) && !Number.isNaN(Number(value));
-is.array = (value, assertion) => {
+function hasPromiseApi(value) {
+    return isFunction(value?.then) && isFunction(value?.catch);
+}
+const is = Object.assign(detect, {
+    all: isAll,
+    any: isAny,
+    array: isArray,
+    arrayBuffer: isArrayBuffer,
+    arrayLike: isArrayLike,
+    asyncFunction: isAsyncFunction,
+    asyncGenerator: isAsyncGenerator,
+    asyncGeneratorFunction: isAsyncGeneratorFunction,
+    asyncIterable: isAsyncIterable,
+    bigint: isBigint,
+    bigInt64Array: isBigInt64Array,
+    bigUint64Array: isBigUint64Array,
+    blob: isBlob,
+    boolean: isBoolean,
+    boundFunction: isBoundFunction,
+    buffer: isBuffer,
+    class: isClass,
+    /** @deprecated Renamed to `class`. */
+    class_: isClass,
+    dataView: isDataView,
+    date: isDate,
+    detect,
+    directInstanceOf: isDirectInstanceOf,
+    /** @deprecated Renamed to `htmlElement` */
+    domElement: isHtmlElement,
+    emptyArray: isEmptyArray,
+    emptyMap: isEmptyMap,
+    emptyObject: isEmptyObject,
+    emptySet: isEmptySet,
+    emptyString: isEmptyString,
+    emptyStringOrWhitespace: isEmptyStringOrWhitespace,
+    enumCase: isEnumCase,
+    error: isError,
+    evenInteger: isEvenInteger,
+    falsy: isFalsy,
+    float32Array: isFloat32Array,
+    float64Array: isFloat64Array,
+    formData: isFormData,
+    function: isFunction,
+    /** @deprecated Renamed to `function`. */
+    function_: isFunction,
+    generator: isGenerator,
+    generatorFunction: isGeneratorFunction,
+    htmlElement: isHtmlElement,
+    infinite: isInfinite,
+    inRange: isInRange,
+    int16Array: isInt16Array,
+    int32Array: isInt32Array,
+    int8Array: isInt8Array,
+    integer: isInteger,
+    iterable: isIterable,
+    map: isMap,
+    nan: isNan,
+    nativePromise: isNativePromise,
+    negativeNumber: isNegativeNumber,
+    nodeStream: isNodeStream,
+    nonEmptyArray: isNonEmptyArray,
+    nonEmptyMap: isNonEmptyMap,
+    nonEmptyObject: isNonEmptyObject,
+    nonEmptySet: isNonEmptySet,
+    nonEmptyString: isNonEmptyString,
+    nonEmptyStringAndNotWhitespace: isNonEmptyStringAndNotWhitespace,
+    null: isNull,
+    /** @deprecated Renamed to `null`. */
+    null_: isNull,
+    nullOrUndefined: isNullOrUndefined,
+    number: isNumber,
+    numericString: isNumericString,
+    object: isObject,
+    observable: isObservable,
+    oddInteger: isOddInteger,
+    plainObject: isPlainObject,
+    positiveNumber: isPositiveNumber,
+    primitive: isPrimitive,
+    promise: isPromise,
+    propertyKey: isPropertyKey,
+    regExp: isRegExp,
+    safeInteger: isSafeInteger,
+    set: isSet,
+    sharedArrayBuffer: isSharedArrayBuffer,
+    string: isString,
+    symbol: isSymbol,
+    truthy: isTruthy,
+    tupleLike: isTupleLike,
+    typedArray: isTypedArray,
+    uint16Array: isUint16Array,
+    uint32Array: isUint32Array,
+    uint8Array: isUint8Array,
+    uint8ClampedArray: isUint8ClampedArray,
+    undefined: isUndefined,
+    urlInstance: isUrlInstance,
+    urlSearchParams: isUrlSearchParams,
+    urlString: isUrlString,
+    validDate: isValidDate,
+    validLength: isValidLength,
+    weakMap: isWeakMap,
+    weakRef: isWeakRef,
+    weakSet: isWeakSet,
+    whitespaceString: isWhitespaceString,
+});
+function isAbsoluteMod2(remainder) {
+    return (value) => isInteger(value) && Math.abs(value % 2) === remainder;
+}
+function isAll(predicate, ...values) {
+    return predicateOnArray(Array.prototype.every, predicate, values);
+}
+function isAny(predicate, ...values) {
+    const predicates = isArray(predicate) ? predicate : [predicate];
+    return predicates.some(singlePredicate => predicateOnArray(Array.prototype.some, singlePredicate, values));
+}
+function isArray(value, assertion) {
     if (!Array.isArray(value)) {
         return false;
     }
-    if (!is.function_(assertion)) {
+    if (!isFunction(assertion)) {
         return true;
     }
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     return value.every(element => assertion(element));
-};
-// eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
-is.buffer = (value) => value?.constructor?.isBuffer?.(value) ?? false;
-is.blob = (value) => isObjectOfType('Blob')(value);
-is.nullOrUndefined = (value) => is.null_(value) || is.undefined(value); // eslint-disable-line @typescript-eslint/ban-types
-is.object = (value) => !is.null_(value) && (typeof value === 'object' || is.function_(value)); // eslint-disable-line @typescript-eslint/ban-types
-is.iterable = (value) => is.function_(value?.[Symbol.iterator]);
-is.asyncIterable = (value) => is.function_(value?.[Symbol.asyncIterator]);
-is.generator = (value) => is.iterable(value) && is.function_(value?.next) && is.function_(value?.throw);
-is.asyncGenerator = (value) => is.asyncIterable(value) && is.function_(value.next) && is.function_(value.throw);
-is.nativePromise = (value) => isObjectOfType('Promise')(value);
-const hasPromiseApi = (value) => is.function_(value?.then)
-    && is.function_(value?.catch);
-is.promise = (value) => is.nativePromise(value) || hasPromiseApi(value);
-is.generatorFunction = isObjectOfType('GeneratorFunction');
-is.asyncGeneratorFunction = (value) => getObjectType(value) === 'AsyncGeneratorFunction';
-is.asyncFunction = (value) => getObjectType(value) === 'AsyncFunction';
-// eslint-disable-next-line no-prototype-builtins, @typescript-eslint/ban-types
-is.boundFunction = (value) => is.function_(value) && !value.hasOwnProperty('prototype');
-is.regExp = isObjectOfType('RegExp');
-is.date = isObjectOfType('Date');
-is.error = isObjectOfType('Error');
-is.map = (value) => isObjectOfType('Map')(value);
-is.set = (value) => isObjectOfType('Set')(value);
-is.weakMap = (value) => isObjectOfType('WeakMap')(value); // eslint-disable-line @typescript-eslint/ban-types
-is.weakSet = (value) => isObjectOfType('WeakSet')(value); // eslint-disable-line @typescript-eslint/ban-types
-is.weakRef = (value) => isObjectOfType('WeakRef')(value); // eslint-disable-line @typescript-eslint/ban-types
-is.int8Array = isObjectOfType('Int8Array');
-is.uint8Array = isObjectOfType('Uint8Array');
-is.uint8ClampedArray = isObjectOfType('Uint8ClampedArray');
-is.int16Array = isObjectOfType('Int16Array');
-is.uint16Array = isObjectOfType('Uint16Array');
-is.int32Array = isObjectOfType('Int32Array');
-is.uint32Array = isObjectOfType('Uint32Array');
-is.float32Array = isObjectOfType('Float32Array');
-is.float64Array = isObjectOfType('Float64Array');
-is.bigInt64Array = isObjectOfType('BigInt64Array');
-is.bigUint64Array = isObjectOfType('BigUint64Array');
-is.arrayBuffer = isObjectOfType('ArrayBuffer');
-is.sharedArrayBuffer = isObjectOfType('SharedArrayBuffer');
-is.dataView = isObjectOfType('DataView');
-// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-is.enumCase = (value, targetEnum) => Object.values(targetEnum).includes(value);
-is.directInstanceOf = (instance, class_) => Object.getPrototypeOf(instance) === class_.prototype;
-is.urlInstance = (value) => isObjectOfType('URL')(value);
-is.urlString = (value) => {
-    if (!is.string(value)) {
+}
+function isArrayBuffer(value) {
+    return getObjectType(value) === 'ArrayBuffer';
+}
+function isArrayLike(value) {
+    return !isNullOrUndefined(value) && !isFunction(value) && isValidLength(value.length);
+}
+function isAsyncFunction(value) {
+    return getObjectType(value) === 'AsyncFunction';
+}
+function isAsyncGenerator(value) {
+    return isAsyncIterable(value) && isFunction(value.next) && isFunction(value.throw);
+}
+function isAsyncGeneratorFunction(value) {
+    return getObjectType(value) === 'AsyncGeneratorFunction';
+}
+function isAsyncIterable(value) {
+    return isFunction(value?.[Symbol.asyncIterator]);
+}
+function isBigint(value) {
+    return typeof value === 'bigint';
+}
+function isBigInt64Array(value) {
+    return getObjectType(value) === 'BigInt64Array';
+}
+function isBigUint64Array(value) {
+    return getObjectType(value) === 'BigUint64Array';
+}
+function isBlob(value) {
+    return getObjectType(value) === 'Blob';
+}
+function isBoolean(value) {
+    return value === true || value === false;
+}
+// eslint-disable-next-line @typescript-eslint/ban-types
+function isBoundFunction(value) {
+    return isFunction(value) && !Object.prototype.hasOwnProperty.call(value, 'prototype');
+}
+function isBuffer(value) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-unsafe-call
+    return value?.constructor?.isBuffer?.(value) ?? false;
+}
+function isClass(value) {
+    return isFunction(value) && value.toString().startsWith('class ');
+}
+function isDataView(value) {
+    return getObjectType(value) === 'DataView';
+}
+function isDate(value) {
+    return getObjectType(value) === 'Date';
+}
+function isDirectInstanceOf(instance, class_) {
+    if (instance === undefined || instance === null) {
         return false;
     }
-    try {
-        new URL(value); // eslint-disable-line no-new
-        return true;
-    }
-    catch {
-        return false;
-    }
-};
-// Example: `is.truthy = (value: unknown): value is (not false | not 0 | not '' | not undefined | not null) => Boolean(value);`
-is.truthy = (value) => Boolean(value); // eslint-disable-line unicorn/prefer-native-coercion-functions
+    return Object.getPrototypeOf(instance) === class_.prototype;
+}
+function isEmptyArray(value) {
+    return isArray(value) && value.length === 0;
+}
+function isEmptyMap(value) {
+    return isMap(value) && value.size === 0;
+}
+function isEmptyObject(value) {
+    return isObject(value) && !isMap(value) && !isSet(value) && Object.keys(value).length === 0;
+}
+function isEmptySet(value) {
+    return isSet(value) && value.size === 0;
+}
+function isEmptyString(value) {
+    return isString(value) && value.length === 0;
+}
+function isEmptyStringOrWhitespace(value) {
+    return isEmptyString(value) || isWhitespaceString(value);
+}
+function isEnumCase(value, targetEnum) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+    return Object.values(targetEnum).includes(value);
+}
+function isError(value) {
+    return getObjectType(value) === 'Error';
+}
+function isEvenInteger(value) {
+    return isAbsoluteMod2(0)(value);
+}
 // Example: `is.falsy = (value: unknown): value is (not true | 0 | '' | undefined | null) => Boolean(value);`
-is.falsy = (value) => !value;
-is.nan = (value) => Number.isNaN(value);
-is.primitive = (value) => is.null_(value) || isPrimitiveTypeName(typeof value);
-is.integer = (value) => Number.isInteger(value);
-is.safeInteger = (value) => Number.isSafeInteger(value);
-is.plainObject = (value) => {
-    // From: https://github.com/sindresorhus/is-plain-obj/blob/main/index.js
-    if (typeof value !== 'object' || value === null) {
-        return false;
-    }
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const prototype = Object.getPrototypeOf(value);
-    return (prototype === null || prototype === Object.prototype || Object.getPrototypeOf(prototype) === null) && !(Symbol.toStringTag in value) && !(Symbol.iterator in value);
-};
-is.typedArray = (value) => isTypedArrayName(getObjectType(value));
-const isValidLength = (value) => is.safeInteger(value) && value >= 0;
-is.arrayLike = (value) => !is.nullOrUndefined(value) && !is.function_(value) && isValidLength(value.length);
-is.tupleLike = (value, guards) => {
-    if (is.array(guards) && is.array(value) && guards.length === value.length) {
-        return guards.every((guard, index) => guard(value[index]));
-    }
-    return false;
-};
-is.inRange = (value, range) => {
-    if (is.number(range)) {
-        return value >= Math.min(0, range) && value <= Math.max(range, 0);
-    }
-    if (is.array(range) && range.length === 2) {
-        return value >= Math.min(...range) && value <= Math.max(...range);
-    }
-    throw new TypeError(`Invalid range: ${JSON.stringify(range)}`);
-};
+function isFalsy(value) {
+    return !value;
+}
+function isFloat32Array(value) {
+    return getObjectType(value) === 'Float32Array';
+}
+function isFloat64Array(value) {
+    return getObjectType(value) === 'Float64Array';
+}
+function isFormData(value) {
+    return getObjectType(value) === 'FormData';
+}
+// eslint-disable-next-line @typescript-eslint/ban-types
+function isFunction(value) {
+    return typeof value === 'function';
+}
+function isGenerator(value) {
+    return isIterable(value) && isFunction(value?.next) && isFunction(value?.throw);
+}
+function isGeneratorFunction(value) {
+    return getObjectType(value) === 'GeneratorFunction';
+}
 // eslint-disable-next-line @typescript-eslint/naming-convention
 const NODE_TYPE_ELEMENT = 1;
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -38450,12 +39398,96 @@ const DOM_PROPERTIES_TO_CHECK = [
     'attributes',
     'nodeValue',
 ];
-is.domElement = (value) => is.object(value)
-    && value.nodeType === NODE_TYPE_ELEMENT
-    && is.string(value.nodeName)
-    && !is.plainObject(value)
-    && DOM_PROPERTIES_TO_CHECK.every(property => property in value);
-is.observable = (value) => {
+function isHtmlElement(value) {
+    return isObject(value)
+        && value.nodeType === NODE_TYPE_ELEMENT
+        && isString(value.nodeName)
+        && !isPlainObject(value)
+        && DOM_PROPERTIES_TO_CHECK.every(property => property in value);
+}
+function isInfinite(value) {
+    return value === Number.POSITIVE_INFINITY || value === Number.NEGATIVE_INFINITY;
+}
+function isInRange(value, range) {
+    if (isNumber(range)) {
+        return value >= Math.min(0, range) && value <= Math.max(range, 0);
+    }
+    if (isArray(range) && range.length === 2) {
+        return value >= Math.min(...range) && value <= Math.max(...range);
+    }
+    throw new TypeError(`Invalid range: ${JSON.stringify(range)}`);
+}
+function isInt16Array(value) {
+    return getObjectType(value) === 'Int16Array';
+}
+function isInt32Array(value) {
+    return getObjectType(value) === 'Int32Array';
+}
+function isInt8Array(value) {
+    return getObjectType(value) === 'Int8Array';
+}
+function isInteger(value) {
+    return Number.isInteger(value);
+}
+function isIterable(value) {
+    return isFunction(value?.[Symbol.iterator]);
+}
+function isMap(value) {
+    return getObjectType(value) === 'Map';
+}
+function isNan(value) {
+    return Number.isNaN(value);
+}
+function isNativePromise(value) {
+    return getObjectType(value) === 'Promise';
+}
+function isNegativeNumber(value) {
+    return isNumber(value) && value < 0;
+}
+function isNodeStream(value) {
+    return isObject(value) && isFunction(value.pipe) && !isObservable(value);
+}
+function isNonEmptyArray(value) {
+    return isArray(value) && value.length > 0;
+}
+function isNonEmptyMap(value) {
+    return isMap(value) && value.size > 0;
+}
+// TODO: Use `not` operator here to remove `Map` and `Set` from type guard:
+// - https://github.com/Microsoft/TypeScript/pull/29317
+function isNonEmptyObject(value) {
+    return isObject(value) && !isMap(value) && !isSet(value) && Object.keys(value).length > 0;
+}
+function isNonEmptySet(value) {
+    return isSet(value) && value.size > 0;
+}
+// TODO: Use `not ''` when the `not` operator is available.
+function isNonEmptyString(value) {
+    return isString(value) && value.length > 0;
+}
+// TODO: Use `not ''` when the `not` operator is available.
+function isNonEmptyStringAndNotWhitespace(value) {
+    return isString(value) && !isEmptyStringOrWhitespace(value);
+}
+// eslint-disable-next-line @typescript-eslint/ban-types
+function isNull(value) {
+    return value === null;
+}
+// eslint-disable-next-line @typescript-eslint/ban-types
+function isNullOrUndefined(value) {
+    return isNull(value) || isUndefined(value);
+}
+function isNumber(value) {
+    return typeof value === 'number' && !Number.isNaN(value);
+}
+function isNumericString(value) {
+    return isString(value) && !isEmptyStringOrWhitespace(value) && !Number.isNaN(Number(value));
+}
+// eslint-disable-next-line @typescript-eslint/ban-types
+function isObject(value) {
+    return !isNull(value) && (typeof value === 'object' || isFunction(value));
+}
+function isObservable(value) {
     if (!value) {
         return false;
     }
@@ -38468,191 +39500,804 @@ is.observable = (value) => {
         return true;
     }
     return false;
-};
-is.nodeStream = (value) => is.object(value) && is.function_(value.pipe) && !is.observable(value);
-is.infinite = (value) => value === Number.POSITIVE_INFINITY || value === Number.NEGATIVE_INFINITY;
-const isAbsoluteMod2 = (remainder) => (value) => is.integer(value) && Math.abs(value % 2) === remainder;
-is.evenInteger = isAbsoluteMod2(0);
-is.oddInteger = isAbsoluteMod2(1);
-is.emptyArray = (value) => is.array(value) && value.length === 0;
-is.nonEmptyArray = (value) => is.array(value) && value.length > 0;
-is.emptyString = (value) => is.string(value) && value.length === 0;
-const isWhiteSpaceString = (value) => is.string(value) && !/\S/.test(value);
-is.emptyStringOrWhitespace = (value) => is.emptyString(value) || isWhiteSpaceString(value);
-// TODO: Use `not ''` when the `not` operator is available.
-is.nonEmptyString = (value) => is.string(value) && value.length > 0;
-// TODO: Use `not ''` when the `not` operator is available.
-is.nonEmptyStringAndNotWhitespace = (value) => is.string(value) && !is.emptyStringOrWhitespace(value);
-// eslint-disable-next-line unicorn/no-array-callback-reference
-is.emptyObject = (value) => is.object(value) && !is.map(value) && !is.set(value) && Object.keys(value).length === 0;
-// TODO: Use `not` operator here to remove `Map` and `Set` from type guard:
-// - https://github.com/Microsoft/TypeScript/pull/29317
-// eslint-disable-next-line unicorn/no-array-callback-reference
-is.nonEmptyObject = (value) => is.object(value) && !is.map(value) && !is.set(value) && Object.keys(value).length > 0;
-is.emptySet = (value) => is.set(value) && value.size === 0;
-is.nonEmptySet = (value) => is.set(value) && value.size > 0;
-// eslint-disable-next-line unicorn/no-array-callback-reference
-is.emptyMap = (value) => is.map(value) && value.size === 0;
-// eslint-disable-next-line unicorn/no-array-callback-reference
-is.nonEmptyMap = (value) => is.map(value) && value.size > 0;
+}
+function isOddInteger(value) {
+    return isAbsoluteMod2(1)(value);
+}
+function isPlainObject(value) {
+    // From: https://github.com/sindresorhus/is-plain-obj/blob/main/index.js
+    if (typeof value !== 'object' || value === null) {
+        return false;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const prototype = Object.getPrototypeOf(value);
+    return (prototype === null || prototype === Object.prototype || Object.getPrototypeOf(prototype) === null) && !(Symbol.toStringTag in value) && !(Symbol.iterator in value);
+}
+function isPositiveNumber(value) {
+    return isNumber(value) && value > 0;
+}
+function isPrimitive(value) {
+    return isNull(value) || isPrimitiveTypeName(typeof value);
+}
+function isPromise(value) {
+    return isNativePromise(value) || hasPromiseApi(value);
+}
 // `PropertyKey` is any value that can be used as an object key (string, number, or symbol)
-is.propertyKey = (value) => is.any([is.string, is.number, is.symbol], value);
-is.formData = (value) => isObjectOfType('FormData')(value);
-is.urlSearchParams = (value) => isObjectOfType('URLSearchParams')(value);
-const predicateOnArray = (method, predicate, values) => {
-    if (!is.function_(predicate)) {
+function isPropertyKey(value) {
+    return isAny([isString, isNumber, isSymbol], value);
+}
+function isRegExp(value) {
+    return getObjectType(value) === 'RegExp';
+}
+function isSafeInteger(value) {
+    return Number.isSafeInteger(value);
+}
+function isSet(value) {
+    return getObjectType(value) === 'Set';
+}
+function isSharedArrayBuffer(value) {
+    return getObjectType(value) === 'SharedArrayBuffer';
+}
+function isString(value) {
+    return typeof value === 'string';
+}
+function isSymbol(value) {
+    return typeof value === 'symbol';
+}
+// Example: `is.truthy = (value: unknown): value is (not false | not 0 | not '' | not undefined | not null) => Boolean(value);`
+// eslint-disable-next-line unicorn/prefer-native-coercion-functions
+function isTruthy(value) {
+    return Boolean(value);
+}
+function isTupleLike(value, guards) {
+    if (isArray(guards) && isArray(value) && guards.length === value.length) {
+        return guards.every((guard, index) => guard(value[index]));
+    }
+    return false;
+}
+function isTypedArray(value) {
+    return isTypedArrayName(getObjectType(value));
+}
+function isUint16Array(value) {
+    return getObjectType(value) === 'Uint16Array';
+}
+function isUint32Array(value) {
+    return getObjectType(value) === 'Uint32Array';
+}
+function isUint8Array(value) {
+    return getObjectType(value) === 'Uint8Array';
+}
+function isUint8ClampedArray(value) {
+    return getObjectType(value) === 'Uint8ClampedArray';
+}
+function isUndefined(value) {
+    return value === undefined;
+}
+function isUrlInstance(value) {
+    return getObjectType(value) === 'URL';
+}
+// eslint-disable-next-line unicorn/prevent-abbreviations
+function isUrlSearchParams(value) {
+    return getObjectType(value) === 'URLSearchParams';
+}
+function isUrlString(value) {
+    if (!isString(value)) {
+        return false;
+    }
+    try {
+        new URL(value); // eslint-disable-line no-new
+        return true;
+    }
+    catch {
+        return false;
+    }
+}
+function isValidDate(value) {
+    return isDate(value) && !isNan(Number(value));
+}
+function isValidLength(value) {
+    return isSafeInteger(value) && value >= 0;
+}
+// eslint-disable-next-line @typescript-eslint/ban-types
+function isWeakMap(value) {
+    return getObjectType(value) === 'WeakMap';
+}
+// eslint-disable-next-line @typescript-eslint/ban-types
+function isWeakRef(value) {
+    return getObjectType(value) === 'WeakRef';
+}
+// eslint-disable-next-line @typescript-eslint/ban-types
+function isWeakSet(value) {
+    return getObjectType(value) === 'WeakSet';
+}
+function isWhitespaceString(value) {
+    return isString(value) && /^\s+$/.test(value);
+}
+function predicateOnArray(method, predicate, values) {
+    if (!isFunction(predicate)) {
         throw new TypeError(`Invalid predicate: ${JSON.stringify(predicate)}`);
     }
     if (values.length === 0) {
         throw new TypeError('Invalid number of values');
     }
     return method.call(values, predicate);
-};
-is.any = (predicate, ...values) => {
-    const predicates = is.array(predicate) ? predicate : [predicate];
-    return predicates.some(singlePredicate => predicateOnArray(Array.prototype.some, singlePredicate, values));
-};
-is.all = (predicate, ...values) => predicateOnArray(Array.prototype.every, predicate, values);
-const assertType = (condition, description, value, options = {}) => {
-    if (!condition) {
-        const { multipleValues } = options;
-        const valuesMessage = multipleValues
-            ? `received values of types ${[
-                ...new Set(value.map(singleValue => `\`${is(singleValue)}\``)),
-            ].join(', ')}`
-            : `received value of type \`${is(value)}\``;
-        throw new TypeError(`Expected value which is \`${description}\`, ${valuesMessage}.`);
-    }
-};
-/* eslint-disable @typescript-eslint/no-confusing-void-expression */
+}
+function typeErrorMessage(description, value) {
+    return `Expected value which is \`${description}\`, received value of type \`${is(value)}\`.`;
+}
+function unique(values) {
+    // eslint-disable-next-line unicorn/prefer-spread
+    return Array.from(new Set(values));
+}
+const andFormatter = new Intl.ListFormat('en', { style: 'long', type: 'conjunction' });
+const orFormatter = new Intl.ListFormat('en', { style: 'long', type: 'disjunction' });
+function typeErrorMessageMultipleValues(expectedType, values) {
+    const uniqueExpectedTypes = unique((isArray(expectedType) ? expectedType : [expectedType]).map(value => `\`${value}\``));
+    const uniqueValueTypes = unique(values.map(value => `\`${is(value)}\``));
+    return `Expected values which are ${orFormatter.format(uniqueExpectedTypes)}. Received values of type${uniqueValueTypes.length > 1 ? 's' : ''} ${andFormatter.format(uniqueValueTypes)}.`;
+}
 const assert = {
-    // Unknowns.
-    undefined: (value) => assertType(is.undefined(value), 'undefined', value),
-    string: (value) => assertType(is.string(value), 'string', value),
-    number: (value) => assertType(is.number(value), 'number', value),
-    positiveNumber: (value) => assertType(is.positiveNumber(value), "positive number" /* AssertionTypeDescription.positiveNumber */, value),
-    negativeNumber: (value) => assertType(is.negativeNumber(value), "negative number" /* AssertionTypeDescription.negativeNumber */, value),
-    bigint: (value) => assertType(is.bigint(value), 'bigint', value),
-    // eslint-disable-next-line @typescript-eslint/ban-types
-    function_: (value) => assertType(is.function_(value), 'Function', value),
-    null_: (value) => assertType(is.null_(value), 'null', value),
-    class_: (value) => assertType(is.class_(value), "Class" /* AssertionTypeDescription.class_ */, value),
-    boolean: (value) => assertType(is.boolean(value), 'boolean', value),
-    symbol: (value) => assertType(is.symbol(value), 'symbol', value),
-    numericString: (value) => assertType(is.numericString(value), "string with a number" /* AssertionTypeDescription.numericString */, value),
-    array: (value, assertion) => {
-        const assert = assertType;
-        assert(is.array(value), 'Array', value);
-        if (assertion) {
-            // eslint-disable-next-line unicorn/no-array-for-each, unicorn/no-array-callback-reference
-            value.forEach(assertion);
-        }
-    },
-    buffer: (value) => assertType(is.buffer(value), 'Buffer', value),
-    blob: (value) => assertType(is.blob(value), 'Blob', value),
-    nullOrUndefined: (value) => assertType(is.nullOrUndefined(value), "null or undefined" /* AssertionTypeDescription.nullOrUndefined */, value),
-    object: (value) => assertType(is.object(value), 'Object', value),
-    iterable: (value) => assertType(is.iterable(value), "Iterable" /* AssertionTypeDescription.iterable */, value),
-    asyncIterable: (value) => assertType(is.asyncIterable(value), "AsyncIterable" /* AssertionTypeDescription.asyncIterable */, value),
-    generator: (value) => assertType(is.generator(value), 'Generator', value),
-    asyncGenerator: (value) => assertType(is.asyncGenerator(value), 'AsyncGenerator', value),
-    nativePromise: (value) => assertType(is.nativePromise(value), "native Promise" /* AssertionTypeDescription.nativePromise */, value),
-    promise: (value) => assertType(is.promise(value), 'Promise', value),
-    generatorFunction: (value) => assertType(is.generatorFunction(value), 'GeneratorFunction', value),
-    asyncGeneratorFunction: (value) => assertType(is.asyncGeneratorFunction(value), 'AsyncGeneratorFunction', value),
-    // eslint-disable-next-line @typescript-eslint/ban-types
-    asyncFunction: (value) => assertType(is.asyncFunction(value), 'AsyncFunction', value),
-    // eslint-disable-next-line @typescript-eslint/ban-types
-    boundFunction: (value) => assertType(is.boundFunction(value), 'Function', value),
-    regExp: (value) => assertType(is.regExp(value), 'RegExp', value),
-    date: (value) => assertType(is.date(value), 'Date', value),
-    error: (value) => assertType(is.error(value), 'Error', value),
-    map: (value) => assertType(is.map(value), 'Map', value),
-    set: (value) => assertType(is.set(value), 'Set', value),
-    weakMap: (value) => assertType(is.weakMap(value), 'WeakMap', value),
-    weakSet: (value) => assertType(is.weakSet(value), 'WeakSet', value),
-    weakRef: (value) => assertType(is.weakRef(value), 'WeakRef', value),
-    int8Array: (value) => assertType(is.int8Array(value), 'Int8Array', value),
-    uint8Array: (value) => assertType(is.uint8Array(value), 'Uint8Array', value),
-    uint8ClampedArray: (value) => assertType(is.uint8ClampedArray(value), 'Uint8ClampedArray', value),
-    int16Array: (value) => assertType(is.int16Array(value), 'Int16Array', value),
-    uint16Array: (value) => assertType(is.uint16Array(value), 'Uint16Array', value),
-    int32Array: (value) => assertType(is.int32Array(value), 'Int32Array', value),
-    uint32Array: (value) => assertType(is.uint32Array(value), 'Uint32Array', value),
-    float32Array: (value) => assertType(is.float32Array(value), 'Float32Array', value),
-    float64Array: (value) => assertType(is.float64Array(value), 'Float64Array', value),
-    bigInt64Array: (value) => assertType(is.bigInt64Array(value), 'BigInt64Array', value),
-    bigUint64Array: (value) => assertType(is.bigUint64Array(value), 'BigUint64Array', value),
-    arrayBuffer: (value) => assertType(is.arrayBuffer(value), 'ArrayBuffer', value),
-    sharedArrayBuffer: (value) => assertType(is.sharedArrayBuffer(value), 'SharedArrayBuffer', value),
-    dataView: (value) => assertType(is.dataView(value), 'DataView', value),
-    enumCase: (value, targetEnum) => assertType(is.enumCase(value, targetEnum), 'EnumCase', value),
-    urlInstance: (value) => assertType(is.urlInstance(value), 'URL', value),
-    urlString: (value) => assertType(is.urlString(value), "string with a URL" /* AssertionTypeDescription.urlString */, value),
-    truthy: (value) => assertType(is.truthy(value), "truthy" /* AssertionTypeDescription.truthy */, value),
-    falsy: (value) => assertType(is.falsy(value), "falsy" /* AssertionTypeDescription.falsy */, value),
-    nan: (value) => assertType(is.nan(value), "NaN" /* AssertionTypeDescription.nan */, value),
-    primitive: (value) => assertType(is.primitive(value), "primitive" /* AssertionTypeDescription.primitive */, value),
-    integer: (value) => assertType(is.integer(value), "integer" /* AssertionTypeDescription.integer */, value),
-    safeInteger: (value) => assertType(is.safeInteger(value), "integer" /* AssertionTypeDescription.safeInteger */, value),
-    plainObject: (value) => assertType(is.plainObject(value), "plain object" /* AssertionTypeDescription.plainObject */, value),
-    typedArray: (value) => assertType(is.typedArray(value), "TypedArray" /* AssertionTypeDescription.typedArray */, value),
-    arrayLike: (value) => assertType(is.arrayLike(value), "array-like" /* AssertionTypeDescription.arrayLike */, value),
-    tupleLike: (value, guards) => assertType(is.tupleLike(value, guards), "tuple-like" /* AssertionTypeDescription.tupleLike */, value),
-    domElement: (value) => assertType(is.domElement(value), "HTMLElement" /* AssertionTypeDescription.domElement */, value),
-    observable: (value) => assertType(is.observable(value), 'Observable', value),
-    nodeStream: (value) => assertType(is.nodeStream(value), "Node.js Stream" /* AssertionTypeDescription.nodeStream */, value),
-    infinite: (value) => assertType(is.infinite(value), "infinite number" /* AssertionTypeDescription.infinite */, value),
-    emptyArray: (value) => assertType(is.emptyArray(value), "empty array" /* AssertionTypeDescription.emptyArray */, value),
-    nonEmptyArray: (value) => assertType(is.nonEmptyArray(value), "non-empty array" /* AssertionTypeDescription.nonEmptyArray */, value),
-    emptyString: (value) => assertType(is.emptyString(value), "empty string" /* AssertionTypeDescription.emptyString */, value),
-    emptyStringOrWhitespace: (value) => assertType(is.emptyStringOrWhitespace(value), "empty string or whitespace" /* AssertionTypeDescription.emptyStringOrWhitespace */, value),
-    nonEmptyString: (value) => assertType(is.nonEmptyString(value), "non-empty string" /* AssertionTypeDescription.nonEmptyString */, value),
-    nonEmptyStringAndNotWhitespace: (value) => assertType(is.nonEmptyStringAndNotWhitespace(value), "non-empty string and not whitespace" /* AssertionTypeDescription.nonEmptyStringAndNotWhitespace */, value),
-    emptyObject: (value) => assertType(is.emptyObject(value), "empty object" /* AssertionTypeDescription.emptyObject */, value),
-    nonEmptyObject: (value) => assertType(is.nonEmptyObject(value), "non-empty object" /* AssertionTypeDescription.nonEmptyObject */, value),
-    emptySet: (value) => assertType(is.emptySet(value), "empty set" /* AssertionTypeDescription.emptySet */, value),
-    nonEmptySet: (value) => assertType(is.nonEmptySet(value), "non-empty set" /* AssertionTypeDescription.nonEmptySet */, value),
-    emptyMap: (value) => assertType(is.emptyMap(value), "empty map" /* AssertionTypeDescription.emptyMap */, value),
-    nonEmptyMap: (value) => assertType(is.nonEmptyMap(value), "non-empty map" /* AssertionTypeDescription.nonEmptyMap */, value),
-    propertyKey: (value) => assertType(is.propertyKey(value), 'PropertyKey', value),
-    formData: (value) => assertType(is.formData(value), 'FormData', value),
-    urlSearchParams: (value) => assertType(is.urlSearchParams(value), 'URLSearchParams', value),
-    // Numbers.
-    evenInteger: (value) => assertType(is.evenInteger(value), "even integer" /* AssertionTypeDescription.evenInteger */, value),
-    oddInteger: (value) => assertType(is.oddInteger(value), "odd integer" /* AssertionTypeDescription.oddInteger */, value),
-    // Two arguments.
-    directInstanceOf: (instance, class_) => assertType(is.directInstanceOf(instance, class_), "T" /* AssertionTypeDescription.directInstanceOf */, instance),
-    inRange: (value, range) => assertType(is.inRange(value, range), "in range" /* AssertionTypeDescription.inRange */, value),
-    // Variadic functions.
-    any: (predicate, ...values) => assertType(is.any(predicate, ...values), "predicate returns truthy for any value" /* AssertionTypeDescription.any */, values, { multipleValues: true }),
-    all: (predicate, ...values) => assertType(is.all(predicate, ...values), "predicate returns truthy for all values" /* AssertionTypeDescription.all */, values, { multipleValues: true }),
+    all: assertAll,
+    any: assertAny,
+    array: assertArray,
+    arrayBuffer: assertArrayBuffer,
+    arrayLike: assertArrayLike,
+    asyncFunction: assertAsyncFunction,
+    asyncGenerator: assertAsyncGenerator,
+    asyncGeneratorFunction: assertAsyncGeneratorFunction,
+    asyncIterable: assertAsyncIterable,
+    bigint: assertBigint,
+    bigInt64Array: assertBigInt64Array,
+    bigUint64Array: assertBigUint64Array,
+    blob: assertBlob,
+    boolean: assertBoolean,
+    boundFunction: assertBoundFunction,
+    buffer: assertBuffer,
+    class: assertClass,
+    class_: assertClass,
+    dataView: assertDataView,
+    date: assertDate,
+    directInstanceOf: assertDirectInstanceOf,
+    domElement: assertHtmlElement,
+    emptyArray: assertEmptyArray,
+    emptyMap: assertEmptyMap,
+    emptyObject: assertEmptyObject,
+    emptySet: assertEmptySet,
+    emptyString: assertEmptyString,
+    emptyStringOrWhitespace: assertEmptyStringOrWhitespace,
+    enumCase: assertEnumCase,
+    error: assertError,
+    evenInteger: assertEvenInteger,
+    falsy: assertFalsy,
+    float32Array: assertFloat32Array,
+    float64Array: assertFloat64Array,
+    formData: assertFormData,
+    function: assertFunction,
+    function_: assertFunction,
+    generator: assertGenerator,
+    generatorFunction: assertGeneratorFunction,
+    htmlElement: assertHtmlElement,
+    infinite: assertInfinite,
+    inRange: assertInRange,
+    int16Array: assertInt16Array,
+    int32Array: assertInt32Array,
+    int8Array: assertInt8Array,
+    integer: assertInteger,
+    iterable: assertIterable,
+    map: assertMap,
+    nan: assertNan,
+    nativePromise: assertNativePromise,
+    negativeNumber: assertNegativeNumber,
+    nodeStream: assertNodeStream,
+    nonEmptyArray: assertNonEmptyArray,
+    nonEmptyMap: assertNonEmptyMap,
+    nonEmptyObject: assertNonEmptyObject,
+    nonEmptySet: assertNonEmptySet,
+    nonEmptyString: assertNonEmptyString,
+    nonEmptyStringAndNotWhitespace: assertNonEmptyStringAndNotWhitespace,
+    null: assertNull,
+    null_: assertNull,
+    nullOrUndefined: assertNullOrUndefined,
+    number: assertNumber,
+    numericString: assertNumericString,
+    object: assertObject,
+    observable: assertObservable,
+    oddInteger: assertOddInteger,
+    plainObject: assertPlainObject,
+    positiveNumber: assertPositiveNumber,
+    primitive: assertPrimitive,
+    promise: assertPromise,
+    propertyKey: assertPropertyKey,
+    regExp: assertRegExp,
+    safeInteger: assertSafeInteger,
+    set: assertSet,
+    sharedArrayBuffer: assertSharedArrayBuffer,
+    string: assertString,
+    symbol: assertSymbol,
+    truthy: assertTruthy,
+    tupleLike: assertTupleLike,
+    typedArray: assertTypedArray,
+    uint16Array: assertUint16Array,
+    uint32Array: assertUint32Array,
+    uint8Array: assertUint8Array,
+    uint8ClampedArray: assertUint8ClampedArray,
+    undefined: assertUndefined,
+    urlInstance: assertUrlInstance,
+    urlSearchParams: assertUrlSearchParams,
+    urlString: assertUrlString,
+    validDate: assertValidDate,
+    validLength: assertValidLength,
+    weakMap: assertWeakMap,
+    weakRef: assertWeakRef,
+    weakSet: assertWeakSet,
+    whitespaceString: assertWhitespaceString,
 };
-/* eslint-enable @typescript-eslint/no-confusing-void-expression */
-// Some few keywords are reserved, but we'll populate them for Node.js users
-// See https://github.com/Microsoft/TypeScript/issues/2536
-Object.defineProperties(is, {
-    class: {
-        value: is.class_,
-    },
-    function: {
-        value: is.function_,
-    },
-    null: {
-        value: is.null_,
-    },
-});
-Object.defineProperties(assert, {
-    class: {
-        value: assert.class_,
-    },
-    function: {
-        value: assert.function_,
-    },
-    null: {
-        value: assert.null_,
-    },
-});
+const methodTypeMap = {
+    isArray: 'Array',
+    isArrayBuffer: 'ArrayBuffer',
+    isArrayLike: 'array-like',
+    isAsyncFunction: 'AsyncFunction',
+    isAsyncGenerator: 'AsyncGenerator',
+    isAsyncGeneratorFunction: 'AsyncGeneratorFunction',
+    isAsyncIterable: 'AsyncIterable',
+    isBigint: 'bigint',
+    isBigInt64Array: 'BigInt64Array',
+    isBigUint64Array: 'BigUint64Array',
+    isBlob: 'Blob',
+    isBoolean: 'boolean',
+    isBoundFunction: 'Function',
+    isBuffer: 'Buffer',
+    isClass: 'Class',
+    isDataView: 'DataView',
+    isDate: 'Date',
+    isDirectInstanceOf: 'T',
+    /** @deprecated */
+    isDomElement: 'HTMLElement',
+    isEmptyArray: 'empty array',
+    isEmptyMap: 'empty map',
+    isEmptyObject: 'empty object',
+    isEmptySet: 'empty set',
+    isEmptyString: 'empty string',
+    isEmptyStringOrWhitespace: 'empty string or whitespace',
+    isEnumCase: 'EnumCase',
+    isError: 'Error',
+    isEvenInteger: 'even integer',
+    isFalsy: 'falsy',
+    isFloat32Array: 'Float32Array',
+    isFloat64Array: 'Float64Array',
+    isFormData: 'FormData',
+    isFunction: 'Function',
+    isGenerator: 'Generator',
+    isGeneratorFunction: 'GeneratorFunction',
+    isHtmlElement: 'HTMLElement',
+    isInfinite: 'infinite number',
+    isInRange: 'in range',
+    isInt16Array: 'Int16Array',
+    isInt32Array: 'Int32Array',
+    isInt8Array: 'Int8Array',
+    isInteger: 'integer',
+    isIterable: 'Iterable',
+    isMap: 'Map',
+    isNan: 'NaN',
+    isNativePromise: 'native Promise',
+    isNegativeNumber: 'negative number',
+    isNodeStream: 'Node.js Stream',
+    isNonEmptyArray: 'non-empty array',
+    isNonEmptyMap: 'non-empty map',
+    isNonEmptyObject: 'non-empty object',
+    isNonEmptySet: 'non-empty set',
+    isNonEmptyString: 'non-empty string',
+    isNonEmptyStringAndNotWhitespace: 'non-empty string and not whitespace',
+    isNull: 'null',
+    isNullOrUndefined: 'null or undefined',
+    isNumber: 'number',
+    isNumericString: 'string with a number',
+    isObject: 'Object',
+    isObservable: 'Observable',
+    isOddInteger: 'odd integer',
+    isPlainObject: 'plain object',
+    isPositiveNumber: 'positive number',
+    isPrimitive: 'primitive',
+    isPromise: 'Promise',
+    isPropertyKey: 'PropertyKey',
+    isRegExp: 'RegExp',
+    isSafeInteger: 'integer',
+    isSet: 'Set',
+    isSharedArrayBuffer: 'SharedArrayBuffer',
+    isString: 'string',
+    isSymbol: 'symbol',
+    isTruthy: 'truthy',
+    isTupleLike: 'tuple-like',
+    isTypedArray: 'TypedArray',
+    isUint16Array: 'Uint16Array',
+    isUint32Array: 'Uint32Array',
+    isUint8Array: 'Uint8Array',
+    isUint8ClampedArray: 'Uint8ClampedArray',
+    isUndefined: 'undefined',
+    isUrlInstance: 'URL',
+    isUrlSearchParams: 'URLSearchParams',
+    isUrlString: 'string with a URL',
+    isValidDate: 'valid Date',
+    isValidLength: 'valid length',
+    isWeakMap: 'WeakMap',
+    isWeakRef: 'WeakRef',
+    isWeakSet: 'WeakSet',
+    isWhitespaceString: 'whitespace string',
+};
+function keysOf(value) {
+    return Object.keys(value);
+}
+const isMethodNames = keysOf(methodTypeMap);
+function isIsMethodName(value) {
+    return isMethodNames.includes(value);
+}
+function assertAll(predicate, ...values) {
+    if (!isAll(predicate, ...values)) {
+        const expectedType = isIsMethodName(predicate.name) ? methodTypeMap[predicate.name] : 'predicate returns truthy for all values';
+        throw new TypeError(typeErrorMessageMultipleValues(expectedType, values));
+    }
+}
+function assertAny(predicate, ...values) {
+    if (!isAny(predicate, ...values)) {
+        const predicates = isArray(predicate) ? predicate : [predicate];
+        const expectedTypes = predicates.map(predicate => isIsMethodName(predicate.name) ? methodTypeMap[predicate.name] : 'predicate returns truthy for any value');
+        throw new TypeError(typeErrorMessageMultipleValues(expectedTypes, values));
+    }
+}
+function assertArray(value, assertion, message) {
+    if (!isArray(value)) {
+        throw new TypeError(message ?? typeErrorMessage('Array', value));
+    }
+    if (assertion) {
+        // eslint-disable-next-line unicorn/no-array-for-each, unicorn/no-array-callback-reference
+        value.forEach(assertion);
+    }
+}
+function assertArrayBuffer(value, message) {
+    if (!isArrayBuffer(value)) {
+        throw new TypeError(message ?? typeErrorMessage('ArrayBuffer', value));
+    }
+}
+function assertArrayLike(value, message) {
+    if (!isArrayLike(value)) {
+        throw new TypeError(message ?? typeErrorMessage('array-like', value));
+    }
+}
+// eslint-disable-next-line @typescript-eslint/ban-types
+function assertAsyncFunction(value, message) {
+    if (!isAsyncFunction(value)) {
+        throw new TypeError(message ?? typeErrorMessage('AsyncFunction', value));
+    }
+}
+function assertAsyncGenerator(value, message) {
+    if (!isAsyncGenerator(value)) {
+        throw new TypeError(message ?? typeErrorMessage('AsyncGenerator', value));
+    }
+}
+function assertAsyncGeneratorFunction(value, message) {
+    if (!isAsyncGeneratorFunction(value)) {
+        throw new TypeError(message ?? typeErrorMessage('AsyncGeneratorFunction', value));
+    }
+}
+function assertAsyncIterable(value, message) {
+    if (!isAsyncIterable(value)) {
+        throw new TypeError(message ?? typeErrorMessage('AsyncIterable', value));
+    }
+}
+function assertBigint(value, message) {
+    if (!isBigint(value)) {
+        throw new TypeError(message ?? typeErrorMessage('bigint', value));
+    }
+}
+function assertBigInt64Array(value, message) {
+    if (!isBigInt64Array(value)) {
+        throw new TypeError(message ?? typeErrorMessage('BigInt64Array', value));
+    }
+}
+function assertBigUint64Array(value, message) {
+    if (!isBigUint64Array(value)) {
+        throw new TypeError(message ?? typeErrorMessage('BigUint64Array', value));
+    }
+}
+function assertBlob(value, message) {
+    if (!isBlob(value)) {
+        throw new TypeError(message ?? typeErrorMessage('Blob', value));
+    }
+}
+function assertBoolean(value, message) {
+    if (!isBoolean(value)) {
+        throw new TypeError(message ?? typeErrorMessage('boolean', value));
+    }
+}
+// eslint-disable-next-line @typescript-eslint/ban-types
+function assertBoundFunction(value, message) {
+    if (!isBoundFunction(value)) {
+        throw new TypeError(message ?? typeErrorMessage('Function', value));
+    }
+}
+function assertBuffer(value, message) {
+    if (!isBuffer(value)) {
+        throw new TypeError(message ?? typeErrorMessage('Buffer', value));
+    }
+}
+function assertClass(value, message) {
+    if (!isClass(value)) {
+        throw new TypeError(message ?? typeErrorMessage('Class', value));
+    }
+}
+function assertDataView(value, message) {
+    if (!isDataView(value)) {
+        throw new TypeError(message ?? typeErrorMessage('DataView', value));
+    }
+}
+function assertDate(value, message) {
+    if (!isDate(value)) {
+        throw new TypeError(message ?? typeErrorMessage('Date', value));
+    }
+}
+function assertDirectInstanceOf(instance, class_, message) {
+    if (!isDirectInstanceOf(instance, class_)) {
+        throw new TypeError(message ?? typeErrorMessage('T', instance));
+    }
+}
+function assertEmptyArray(value, message) {
+    if (!isEmptyArray(value)) {
+        throw new TypeError(message ?? typeErrorMessage('empty array', value));
+    }
+}
+function assertEmptyMap(value, message) {
+    if (!isEmptyMap(value)) {
+        throw new TypeError(message ?? typeErrorMessage('empty map', value));
+    }
+}
+function assertEmptyObject(value, message) {
+    if (!isEmptyObject(value)) {
+        throw new TypeError(message ?? typeErrorMessage('empty object', value));
+    }
+}
+function assertEmptySet(value, message) {
+    if (!isEmptySet(value)) {
+        throw new TypeError(message ?? typeErrorMessage('empty set', value));
+    }
+}
+function assertEmptyString(value, message) {
+    if (!isEmptyString(value)) {
+        throw new TypeError(message ?? typeErrorMessage('empty string', value));
+    }
+}
+function assertEmptyStringOrWhitespace(value, message) {
+    if (!isEmptyStringOrWhitespace(value)) {
+        throw new TypeError(message ?? typeErrorMessage('empty string or whitespace', value));
+    }
+}
+function assertEnumCase(value, targetEnum, message) {
+    if (!isEnumCase(value, targetEnum)) {
+        throw new TypeError(message ?? typeErrorMessage('EnumCase', value));
+    }
+}
+function assertError(value, message) {
+    if (!isError(value)) {
+        throw new TypeError(message ?? typeErrorMessage('Error', value));
+    }
+}
+function assertEvenInteger(value, message) {
+    if (!isEvenInteger(value)) {
+        throw new TypeError(message ?? typeErrorMessage('even integer', value));
+    }
+}
+function assertFalsy(value, message) {
+    if (!isFalsy(value)) {
+        throw new TypeError(message ?? typeErrorMessage('falsy', value));
+    }
+}
+function assertFloat32Array(value, message) {
+    if (!isFloat32Array(value)) {
+        throw new TypeError(message ?? typeErrorMessage('Float32Array', value));
+    }
+}
+function assertFloat64Array(value, message) {
+    if (!isFloat64Array(value)) {
+        throw new TypeError(message ?? typeErrorMessage('Float64Array', value));
+    }
+}
+function assertFormData(value, message) {
+    if (!isFormData(value)) {
+        throw new TypeError(message ?? typeErrorMessage('FormData', value));
+    }
+}
+// eslint-disable-next-line @typescript-eslint/ban-types
+function assertFunction(value, message) {
+    if (!isFunction(value)) {
+        throw new TypeError(message ?? typeErrorMessage('Function', value));
+    }
+}
+function assertGenerator(value, message) {
+    if (!isGenerator(value)) {
+        throw new TypeError(message ?? typeErrorMessage('Generator', value));
+    }
+}
+function assertGeneratorFunction(value, message) {
+    if (!isGeneratorFunction(value)) {
+        throw new TypeError(message ?? typeErrorMessage('GeneratorFunction', value));
+    }
+}
+function assertHtmlElement(value, message) {
+    if (!isHtmlElement(value)) {
+        throw new TypeError(message ?? typeErrorMessage('HTMLElement', value));
+    }
+}
+function assertInfinite(value, message) {
+    if (!isInfinite(value)) {
+        throw new TypeError(message ?? typeErrorMessage('infinite number', value));
+    }
+}
+function assertInRange(value, range, message) {
+    if (!isInRange(value, range)) {
+        throw new TypeError(message ?? typeErrorMessage('in range', value));
+    }
+}
+function assertInt16Array(value, message) {
+    if (!isInt16Array(value)) {
+        throw new TypeError(message ?? typeErrorMessage('Int16Array', value));
+    }
+}
+function assertInt32Array(value, message) {
+    if (!isInt32Array(value)) {
+        throw new TypeError(message ?? typeErrorMessage('Int32Array', value));
+    }
+}
+function assertInt8Array(value, message) {
+    if (!isInt8Array(value)) {
+        throw new TypeError(message ?? typeErrorMessage('Int8Array', value));
+    }
+}
+function assertInteger(value, message) {
+    if (!isInteger(value)) {
+        throw new TypeError(message ?? typeErrorMessage('integer', value));
+    }
+}
+function assertIterable(value, message) {
+    if (!isIterable(value)) {
+        throw new TypeError(message ?? typeErrorMessage('Iterable', value));
+    }
+}
+function assertMap(value, message) {
+    if (!isMap(value)) {
+        throw new TypeError(message ?? typeErrorMessage('Map', value));
+    }
+}
+function assertNan(value, message) {
+    if (!isNan(value)) {
+        throw new TypeError(message ?? typeErrorMessage('NaN', value));
+    }
+}
+function assertNativePromise(value, message) {
+    if (!isNativePromise(value)) {
+        throw new TypeError(message ?? typeErrorMessage('native Promise', value));
+    }
+}
+function assertNegativeNumber(value, message) {
+    if (!isNegativeNumber(value)) {
+        throw new TypeError(message ?? typeErrorMessage('negative number', value));
+    }
+}
+function assertNodeStream(value, message) {
+    if (!isNodeStream(value)) {
+        throw new TypeError(message ?? typeErrorMessage('Node.js Stream', value));
+    }
+}
+function assertNonEmptyArray(value, message) {
+    if (!isNonEmptyArray(value)) {
+        throw new TypeError(message ?? typeErrorMessage('non-empty array', value));
+    }
+}
+function assertNonEmptyMap(value, message) {
+    if (!isNonEmptyMap(value)) {
+        throw new TypeError(message ?? typeErrorMessage('non-empty map', value));
+    }
+}
+function assertNonEmptyObject(value, message) {
+    if (!isNonEmptyObject(value)) {
+        throw new TypeError(message ?? typeErrorMessage('non-empty object', value));
+    }
+}
+function assertNonEmptySet(value, message) {
+    if (!isNonEmptySet(value)) {
+        throw new TypeError(message ?? typeErrorMessage('non-empty set', value));
+    }
+}
+function assertNonEmptyString(value, message) {
+    if (!isNonEmptyString(value)) {
+        throw new TypeError(message ?? typeErrorMessage('non-empty string', value));
+    }
+}
+function assertNonEmptyStringAndNotWhitespace(value, message) {
+    if (!isNonEmptyStringAndNotWhitespace(value)) {
+        throw new TypeError(message ?? typeErrorMessage('non-empty string and not whitespace', value));
+    }
+}
+// eslint-disable-next-line @typescript-eslint/ban-types
+function assertNull(value, message) {
+    if (!isNull(value)) {
+        throw new TypeError(message ?? typeErrorMessage('null', value));
+    }
+}
+// eslint-disable-next-line @typescript-eslint/ban-types
+function assertNullOrUndefined(value, message) {
+    if (!isNullOrUndefined(value)) {
+        throw new TypeError(message ?? typeErrorMessage('null or undefined', value));
+    }
+}
+function assertNumber(value, message) {
+    if (!isNumber(value)) {
+        throw new TypeError(message ?? typeErrorMessage('number', value));
+    }
+}
+function assertNumericString(value, message) {
+    if (!isNumericString(value)) {
+        throw new TypeError(message ?? typeErrorMessage('string with a number', value));
+    }
+}
+// eslint-disable-next-line @typescript-eslint/ban-types
+function assertObject(value, message) {
+    if (!isObject(value)) {
+        throw new TypeError(message ?? typeErrorMessage('Object', value));
+    }
+}
+function assertObservable(value, message) {
+    if (!isObservable(value)) {
+        throw new TypeError(message ?? typeErrorMessage('Observable', value));
+    }
+}
+function assertOddInteger(value, message) {
+    if (!isOddInteger(value)) {
+        throw new TypeError(message ?? typeErrorMessage('odd integer', value));
+    }
+}
+function assertPlainObject(value, message) {
+    if (!isPlainObject(value)) {
+        throw new TypeError(message ?? typeErrorMessage('plain object', value));
+    }
+}
+function assertPositiveNumber(value, message) {
+    if (!isPositiveNumber(value)) {
+        throw new TypeError(message ?? typeErrorMessage('positive number', value));
+    }
+}
+function assertPrimitive(value, message) {
+    if (!isPrimitive(value)) {
+        throw new TypeError(message ?? typeErrorMessage('primitive', value));
+    }
+}
+function assertPromise(value, message) {
+    if (!isPromise(value)) {
+        throw new TypeError(message ?? typeErrorMessage('Promise', value));
+    }
+}
+function assertPropertyKey(value, message) {
+    if (!isPropertyKey(value)) {
+        throw new TypeError(message ?? typeErrorMessage('PropertyKey', value));
+    }
+}
+function assertRegExp(value, message) {
+    if (!isRegExp(value)) {
+        throw new TypeError(message ?? typeErrorMessage('RegExp', value));
+    }
+}
+function assertSafeInteger(value, message) {
+    if (!isSafeInteger(value)) {
+        throw new TypeError(message ?? typeErrorMessage('integer', value));
+    }
+}
+function assertSet(value, message) {
+    if (!isSet(value)) {
+        throw new TypeError(message ?? typeErrorMessage('Set', value));
+    }
+}
+function assertSharedArrayBuffer(value, message) {
+    if (!isSharedArrayBuffer(value)) {
+        throw new TypeError(message ?? typeErrorMessage('SharedArrayBuffer', value));
+    }
+}
+function assertString(value, message) {
+    if (!isString(value)) {
+        throw new TypeError(message ?? typeErrorMessage('string', value));
+    }
+}
+function assertSymbol(value, message) {
+    if (!isSymbol(value)) {
+        throw new TypeError(message ?? typeErrorMessage('symbol', value));
+    }
+}
+function assertTruthy(value, message) {
+    if (!isTruthy(value)) {
+        throw new TypeError(message ?? typeErrorMessage('truthy', value));
+    }
+}
+function assertTupleLike(value, guards, message) {
+    if (!isTupleLike(value, guards)) {
+        throw new TypeError(message ?? typeErrorMessage('tuple-like', value));
+    }
+}
+function assertTypedArray(value, message) {
+    if (!isTypedArray(value)) {
+        throw new TypeError(message ?? typeErrorMessage('TypedArray', value));
+    }
+}
+function assertUint16Array(value, message) {
+    if (!isUint16Array(value)) {
+        throw new TypeError(message ?? typeErrorMessage('Uint16Array', value));
+    }
+}
+function assertUint32Array(value, message) {
+    if (!isUint32Array(value)) {
+        throw new TypeError(message ?? typeErrorMessage('Uint32Array', value));
+    }
+}
+function assertUint8Array(value, message) {
+    if (!isUint8Array(value)) {
+        throw new TypeError(message ?? typeErrorMessage('Uint8Array', value));
+    }
+}
+function assertUint8ClampedArray(value, message) {
+    if (!isUint8ClampedArray(value)) {
+        throw new TypeError(message ?? typeErrorMessage('Uint8ClampedArray', value));
+    }
+}
+function assertUndefined(value, message) {
+    if (!isUndefined(value)) {
+        throw new TypeError(message ?? typeErrorMessage('undefined', value));
+    }
+}
+function assertUrlInstance(value, message) {
+    if (!isUrlInstance(value)) {
+        throw new TypeError(message ?? typeErrorMessage('URL', value));
+    }
+}
+// eslint-disable-next-line unicorn/prevent-abbreviations
+function assertUrlSearchParams(value, message) {
+    if (!isUrlSearchParams(value)) {
+        throw new TypeError(message ?? typeErrorMessage('URLSearchParams', value));
+    }
+}
+function assertUrlString(value, message) {
+    if (!isUrlString(value)) {
+        throw new TypeError(message ?? typeErrorMessage('string with a URL', value));
+    }
+}
+function assertValidDate(value, message) {
+    if (!isValidDate(value)) {
+        throw new TypeError(message ?? typeErrorMessage('valid Date', value));
+    }
+}
+function assertValidLength(value, message) {
+    if (!isValidLength(value)) {
+        throw new TypeError(message ?? typeErrorMessage('valid length', value));
+    }
+}
+// eslint-disable-next-line @typescript-eslint/ban-types
+function assertWeakMap(value, message) {
+    if (!isWeakMap(value)) {
+        throw new TypeError(message ?? typeErrorMessage('WeakMap', value));
+    }
+}
+// eslint-disable-next-line @typescript-eslint/ban-types
+function assertWeakRef(value, message) {
+    if (!isWeakRef(value)) {
+        throw new TypeError(message ?? typeErrorMessage('WeakRef', value));
+    }
+}
+// eslint-disable-next-line @typescript-eslint/ban-types
+function assertWeakSet(value, message) {
+    if (!isWeakSet(value)) {
+        throw new TypeError(message ?? typeErrorMessage('WeakSet', value));
+    }
+}
+function assertWhitespaceString(value, message) {
+    if (!isWhitespaceString(value)) {
+        throw new TypeError(message ?? typeErrorMessage('whitespace string', value));
+    }
+}
 /* harmony default export */ const dist = (is);
 
 // EXTERNAL MODULE: external "node:events"
@@ -38669,101 +40314,110 @@ class CancelError extends Error {
 	}
 }
 
-// TODO: Use private class fields when ESLint 8 is out.
+const promiseState = Object.freeze({
+	pending: Symbol('pending'),
+	canceled: Symbol('canceled'),
+	resolved: Symbol('resolved'),
+	rejected: Symbol('rejected'),
+});
 
 class PCancelable {
 	static fn(userFunction) {
-		return (...arguments_) => {
-			return new PCancelable((resolve, reject, onCancel) => {
-				arguments_.push(onCancel);
-				// eslint-disable-next-line promise/prefer-await-to-then
-				userFunction(...arguments_).then(resolve, reject);
-			});
-		};
+		return (...arguments_) => new PCancelable((resolve, reject, onCancel) => {
+			arguments_.push(onCancel);
+			userFunction(...arguments_).then(resolve, reject);
+		});
 	}
 
-	constructor(executor) {
-		this._cancelHandlers = [];
-		this._isPending = true;
-		this._isCanceled = false;
-		this._rejectOnCancel = true;
+	#cancelHandlers = [];
+	#rejectOnCancel = true;
+	#state = promiseState.pending;
+	#promise;
+	#reject;
 
-		this._promise = new Promise((resolve, reject) => {
-			this._reject = reject;
+	constructor(executor) {
+		this.#promise = new Promise((resolve, reject) => {
+			this.#reject = reject;
 
 			const onResolve = value => {
-				if (!this._isCanceled || !onCancel.shouldReject) {
-					this._isPending = false;
+				if (this.#state !== promiseState.canceled || !onCancel.shouldReject) {
 					resolve(value);
+					this.#setState(promiseState.resolved);
 				}
 			};
 
 			const onReject = error => {
-				this._isPending = false;
-				reject(error);
+				if (this.#state !== promiseState.canceled || !onCancel.shouldReject) {
+					reject(error);
+					this.#setState(promiseState.rejected);
+				}
 			};
 
 			const onCancel = handler => {
-				if (!this._isPending) {
-					throw new Error('The `onCancel` handler was attached after the promise settled.');
+				if (this.#state !== promiseState.pending) {
+					throw new Error(`The \`onCancel\` handler was attached after the promise ${this.#state.description}.`);
 				}
 
-				this._cancelHandlers.push(handler);
+				this.#cancelHandlers.push(handler);
 			};
 
 			Object.defineProperties(onCancel, {
 				shouldReject: {
-					get: () => this._rejectOnCancel,
+					get: () => this.#rejectOnCancel,
 					set: boolean => {
-						this._rejectOnCancel = boolean;
-					}
-				}
+						this.#rejectOnCancel = boolean;
+					},
+				},
 			});
 
 			executor(onResolve, onReject, onCancel);
 		});
 	}
 
+	// eslint-disable-next-line unicorn/no-thenable
 	then(onFulfilled, onRejected) {
-		// eslint-disable-next-line promise/prefer-await-to-then
-		return this._promise.then(onFulfilled, onRejected);
+		return this.#promise.then(onFulfilled, onRejected);
 	}
 
 	catch(onRejected) {
-		// eslint-disable-next-line promise/prefer-await-to-then
-		return this._promise.catch(onRejected);
+		return this.#promise.catch(onRejected);
 	}
 
 	finally(onFinally) {
-		// eslint-disable-next-line promise/prefer-await-to-then
-		return this._promise.finally(onFinally);
+		return this.#promise.finally(onFinally);
 	}
 
 	cancel(reason) {
-		if (!this._isPending || this._isCanceled) {
+		if (this.#state !== promiseState.pending) {
 			return;
 		}
 
-		this._isCanceled = true;
+		this.#setState(promiseState.canceled);
 
-		if (this._cancelHandlers.length > 0) {
+		if (this.#cancelHandlers.length > 0) {
 			try {
-				for (const handler of this._cancelHandlers) {
+				for (const handler of this.#cancelHandlers) {
 					handler();
 				}
 			} catch (error) {
-				this._reject(error);
+				this.#reject(error);
 				return;
 			}
 		}
 
-		if (this._rejectOnCancel) {
-			this._reject(new CancelError(reason));
+		if (this.#rejectOnCancel) {
+			this.#reject(new CancelError(reason));
 		}
 	}
 
 	get isCanceled() {
-		return this._isCanceled;
+		return this.#state === promiseState.canceled;
+	}
+
+	#setState(state) {
+		if (this.#state === promiseState.pending) {
+			this.#state = state;
+		}
 	}
 }
 
@@ -38780,44 +40434,14 @@ An error to be thrown when a request fails.
 Contains a `code` property with error class code, like `ECONNREFUSED`.
 */
 class RequestError extends Error {
+    input;
+    code;
+    stack;
+    response;
+    request;
+    timings;
     constructor(message, error, self) {
-        super(message);
-        Object.defineProperty(this, "input", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "code", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "stack", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "response", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "request", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "timings", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
+        super(message, { cause: error });
         Error.captureStackTrace(this, this.constructor);
         this.name = 'RequestError';
         this.code = error.code ?? 'ERR_GOT_REQUEST_ERROR';
@@ -38865,6 +40489,7 @@ class MaxRedirectsError extends RequestError {
 An error to be thrown when the server response code is not 2xx nor 3xx if `options.followRedirect` is `true`, but always except for 304.
 Includes a `response` property.
 */
+// TODO: Change `HTTPError<T = any>` to `HTTPError<T = unknown>` in the next major version to enforce type usage.
 // eslint-disable-next-line @typescript-eslint/naming-convention
 class HTTPError extends RequestError {
     constructor(response) {
@@ -38899,20 +40524,10 @@ An error to be thrown when the request is aborted due to a timeout.
 Includes an `event` and `timings` property.
 */
 class TimeoutError extends RequestError {
+    timings;
+    event;
     constructor(error, timings, request) {
         super(error.message, error, request);
-        Object.defineProperty(this, "timings", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "event", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
         this.name = 'TimeoutError';
         this.event = error.event;
         this.timings = timings;
@@ -39091,7 +40706,10 @@ const supportedProtocols = new Set([
 const hasCustomProtocol = urlString => {
 	try {
 		const {protocol} = new URL(urlString);
-		return protocol.endsWith(':') && !supportedProtocols.has(protocol);
+
+		return protocol.endsWith(':')
+			&& !protocol.includes('.')
+			&& !supportedProtocols.has(protocol);
 	} catch {
 		return false;
 	}
@@ -39359,8 +40977,449 @@ function normalizeUrl(urlString, options) {
 	return urlString;
 }
 
-// EXTERNAL MODULE: ./node_modules/get-stream/index.js
-var get_stream = __nccwpck_require__(1766);
+;// CONCATENATED MODULE: ./node_modules/is-stream/index.js
+function isStream(stream, {checkOpen = true} = {}) {
+	return stream !== null
+		&& typeof stream === 'object'
+		&& (stream.writable || stream.readable || !checkOpen || (stream.writable === undefined && stream.readable === undefined))
+		&& typeof stream.pipe === 'function';
+}
+
+function isWritableStream(stream, {checkOpen = true} = {}) {
+	return isStream(stream, {checkOpen})
+		&& (stream.writable || !checkOpen)
+		&& typeof stream.write === 'function'
+		&& typeof stream.end === 'function'
+		&& typeof stream.writable === 'boolean'
+		&& typeof stream.writableObjectMode === 'boolean'
+		&& typeof stream.destroy === 'function'
+		&& typeof stream.destroyed === 'boolean';
+}
+
+function isReadableStream(stream, {checkOpen = true} = {}) {
+	return isStream(stream, {checkOpen})
+		&& (stream.readable || !checkOpen)
+		&& typeof stream.read === 'function'
+		&& typeof stream.readable === 'boolean'
+		&& typeof stream.readableObjectMode === 'boolean'
+		&& typeof stream.destroy === 'function'
+		&& typeof stream.destroyed === 'boolean';
+}
+
+function isDuplexStream(stream, options) {
+	return isWritableStream(stream, options)
+		&& isReadableStream(stream, options);
+}
+
+function isTransformStream(stream, options) {
+	return isDuplexStream(stream, options)
+		&& typeof stream._transform === 'function';
+}
+
+;// CONCATENATED MODULE: ./node_modules/@sec-ant/readable-stream/dist/ponyfill/asyncIterator.js
+const a = Object.getPrototypeOf(
+  Object.getPrototypeOf(
+    /* istanbul ignore next */
+    async function* () {
+    }
+  ).prototype
+);
+class c {
+  #t;
+  #n;
+  #r = !1;
+  #e = void 0;
+  constructor(e, t) {
+    this.#t = e, this.#n = t;
+  }
+  next() {
+    const e = () => this.#s();
+    return this.#e = this.#e ? this.#e.then(e, e) : e(), this.#e;
+  }
+  return(e) {
+    const t = () => this.#i(e);
+    return this.#e ? this.#e.then(t, t) : t();
+  }
+  async #s() {
+    if (this.#r)
+      return {
+        done: !0,
+        value: void 0
+      };
+    let e;
+    try {
+      e = await this.#t.read();
+    } catch (t) {
+      throw this.#e = void 0, this.#r = !0, this.#t.releaseLock(), t;
+    }
+    return e.done && (this.#e = void 0, this.#r = !0, this.#t.releaseLock()), e;
+  }
+  async #i(e) {
+    if (this.#r)
+      return {
+        done: !0,
+        value: e
+      };
+    if (this.#r = !0, !this.#n) {
+      const t = this.#t.cancel(e);
+      return this.#t.releaseLock(), await t, {
+        done: !0,
+        value: e
+      };
+    }
+    return this.#t.releaseLock(), {
+      done: !0,
+      value: e
+    };
+  }
+}
+const n = Symbol();
+function i() {
+  return this[n].next();
+}
+Object.defineProperty(i, "name", { value: "next" });
+function o(r) {
+  return this[n].return(r);
+}
+Object.defineProperty(o, "name", { value: "return" });
+const u = Object.create(a, {
+  next: {
+    enumerable: !0,
+    configurable: !0,
+    writable: !0,
+    value: i
+  },
+  return: {
+    enumerable: !0,
+    configurable: !0,
+    writable: !0,
+    value: o
+  }
+});
+function h({ preventCancel: r = !1 } = {}) {
+  const e = this.getReader(), t = new c(
+    e,
+    r
+  ), s = Object.create(u);
+  return s[n] = t, s;
+}
+
+
+;// CONCATENATED MODULE: ./node_modules/@sec-ant/readable-stream/dist/ponyfill/index.js
+
+
+
+
+;// CONCATENATED MODULE: ./node_modules/cacheable-request/node_modules/get-stream/source/stream.js
+
+
+
+const getAsyncIterable = stream => {
+	if (isReadableStream(stream, {checkOpen: false}) && nodeImports.on !== undefined) {
+		return getStreamIterable(stream);
+	}
+
+	if (typeof stream?.[Symbol.asyncIterator] === 'function') {
+		return stream;
+	}
+
+	// `ReadableStream[Symbol.asyncIterator]` support is missing in multiple browsers, so we ponyfill it
+	if (stream_toString.call(stream) === '[object ReadableStream]') {
+		return h.call(stream);
+	}
+
+	throw new TypeError('The first argument must be a Readable, a ReadableStream, or an async iterable.');
+};
+
+const {toString: stream_toString} = Object.prototype;
+
+// The default iterable for Node.js streams does not allow for multiple readers at once, so we re-implement it
+const getStreamIterable = async function * (stream) {
+	const controller = new AbortController();
+	const state = {};
+	handleStreamEnd(stream, controller, state);
+
+	try {
+		for await (const [chunk] of nodeImports.on(stream, 'data', {signal: controller.signal})) {
+			yield chunk;
+		}
+	} catch (error) {
+		// Stream failure, for example due to `stream.destroy(error)`
+		if (state.error !== undefined) {
+			throw state.error;
+		// `error` event directly emitted on stream
+		} else if (!controller.signal.aborted) {
+			throw error;
+		// Otherwise, stream completed successfully
+		}
+		// The `finally` block also runs when the caller throws, for example due to the `maxBuffer` option
+	} finally {
+		stream.destroy();
+	}
+};
+
+const handleStreamEnd = async (stream, controller, state) => {
+	try {
+		await nodeImports.finished(stream, {
+			cleanup: true,
+			readable: true,
+			writable: false,
+			error: false,
+		});
+	} catch (error) {
+		state.error = error;
+	} finally {
+		controller.abort();
+	}
+};
+
+// Loaded by the Node entrypoint, but not by the browser one.
+// This prevents using dynamic imports.
+const nodeImports = {};
+
+;// CONCATENATED MODULE: ./node_modules/cacheable-request/node_modules/get-stream/source/contents.js
+
+
+const contents_getStreamContents = async (stream, {init, convertChunk, getSize, truncateChunk, addChunk, getFinalChunk, finalize}, {maxBuffer = Number.POSITIVE_INFINITY} = {}) => {
+	const asyncIterable = getAsyncIterable(stream);
+
+	const state = init();
+	state.length = 0;
+
+	try {
+		for await (const chunk of asyncIterable) {
+			const chunkType = getChunkType(chunk);
+			const convertedChunk = convertChunk[chunkType](chunk, state);
+			appendChunk({
+				convertedChunk,
+				state,
+				getSize,
+				truncateChunk,
+				addChunk,
+				maxBuffer,
+			});
+		}
+
+		appendFinalChunk({
+			state,
+			convertChunk,
+			getSize,
+			truncateChunk,
+			addChunk,
+			getFinalChunk,
+			maxBuffer,
+		});
+		return finalize(state);
+	} catch (error) {
+		const normalizedError = typeof error === 'object' && error !== null ? error : new Error(error);
+		normalizedError.bufferedData = finalize(state);
+		throw normalizedError;
+	}
+};
+
+const appendFinalChunk = ({state, getSize, truncateChunk, addChunk, getFinalChunk, maxBuffer}) => {
+	const convertedChunk = getFinalChunk(state);
+	if (convertedChunk !== undefined) {
+		appendChunk({
+			convertedChunk,
+			state,
+			getSize,
+			truncateChunk,
+			addChunk,
+			maxBuffer,
+		});
+	}
+};
+
+const appendChunk = ({convertedChunk, state, getSize, truncateChunk, addChunk, maxBuffer}) => {
+	const chunkSize = getSize(convertedChunk);
+	const newLength = state.length + chunkSize;
+
+	if (newLength <= maxBuffer) {
+		addNewChunk(convertedChunk, state, addChunk, newLength);
+		return;
+	}
+
+	const truncatedChunk = truncateChunk(convertedChunk, maxBuffer - state.length);
+
+	if (truncatedChunk !== undefined) {
+		addNewChunk(truncatedChunk, state, addChunk, maxBuffer);
+	}
+
+	throw new MaxBufferError();
+};
+
+const addNewChunk = (convertedChunk, state, addChunk, newLength) => {
+	state.contents = addChunk(convertedChunk, state, newLength);
+	state.length = newLength;
+};
+
+const getChunkType = chunk => {
+	const typeOfChunk = typeof chunk;
+
+	if (typeOfChunk === 'string') {
+		return 'string';
+	}
+
+	if (typeOfChunk !== 'object' || chunk === null) {
+		return 'others';
+	}
+
+	if (globalThis.Buffer?.isBuffer(chunk)) {
+		return 'buffer';
+	}
+
+	const prototypeName = objectToString.call(chunk);
+
+	if (prototypeName === '[object ArrayBuffer]') {
+		return 'arrayBuffer';
+	}
+
+	if (prototypeName === '[object DataView]') {
+		return 'dataView';
+	}
+
+	if (
+		Number.isInteger(chunk.byteLength)
+		&& Number.isInteger(chunk.byteOffset)
+		&& objectToString.call(chunk.buffer) === '[object ArrayBuffer]'
+	) {
+		return 'typedArray';
+	}
+
+	return 'others';
+};
+
+const {toString: objectToString} = Object.prototype;
+
+class MaxBufferError extends Error {
+	name = 'MaxBufferError';
+
+	constructor() {
+		super('maxBuffer exceeded');
+	}
+}
+
+;// CONCATENATED MODULE: ./node_modules/cacheable-request/node_modules/get-stream/source/utils.js
+const identity = value => value;
+
+const noop = () => undefined;
+
+const getContentsProperty = ({contents}) => contents;
+
+const throwObjectStream = chunk => {
+	throw new Error(`Streams in object mode are not supported: ${String(chunk)}`);
+};
+
+const getLengthProperty = convertedChunk => convertedChunk.length;
+
+;// CONCATENATED MODULE: ./node_modules/cacheable-request/node_modules/get-stream/source/array-buffer.js
+
+
+
+async function getStreamAsArrayBuffer(stream, options) {
+	return contents_getStreamContents(stream, arrayBufferMethods, options);
+}
+
+const initArrayBuffer = () => ({contents: new ArrayBuffer(0)});
+
+const useTextEncoder = chunk => textEncoder.encode(chunk);
+const textEncoder = new TextEncoder();
+
+const useUint8Array = chunk => new Uint8Array(chunk);
+
+const useUint8ArrayWithOffset = chunk => new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength);
+
+const truncateArrayBufferChunk = (convertedChunk, chunkSize) => convertedChunk.slice(0, chunkSize);
+
+// `contents` is an increasingly growing `Uint8Array`.
+const addArrayBufferChunk = (convertedChunk, {contents, length: previousLength}, length) => {
+	const newContents = hasArrayBufferResize() ? resizeArrayBuffer(contents, length) : resizeArrayBufferSlow(contents, length);
+	new Uint8Array(newContents).set(convertedChunk, previousLength);
+	return newContents;
+};
+
+// Without `ArrayBuffer.resize()`, `contents` size is always a power of 2.
+// This means its last bytes are zeroes (not stream data), which need to be
+// trimmed at the end with `ArrayBuffer.slice()`.
+const resizeArrayBufferSlow = (contents, length) => {
+	if (length <= contents.byteLength) {
+		return contents;
+	}
+
+	const arrayBuffer = new ArrayBuffer(getNewContentsLength(length));
+	new Uint8Array(arrayBuffer).set(new Uint8Array(contents), 0);
+	return arrayBuffer;
+};
+
+// With `ArrayBuffer.resize()`, `contents` size matches exactly the size of
+// the stream data. It does not include extraneous zeroes to trim at the end.
+// The underlying `ArrayBuffer` does allocate a number of bytes that is a power
+// of 2, but those bytes are only visible after calling `ArrayBuffer.resize()`.
+const resizeArrayBuffer = (contents, length) => {
+	if (length <= contents.maxByteLength) {
+		contents.resize(length);
+		return contents;
+	}
+
+	const arrayBuffer = new ArrayBuffer(length, {maxByteLength: getNewContentsLength(length)});
+	new Uint8Array(arrayBuffer).set(new Uint8Array(contents), 0);
+	return arrayBuffer;
+};
+
+// Retrieve the closest `length` that is both >= and a power of 2
+const getNewContentsLength = length => SCALE_FACTOR ** Math.ceil(Math.log(length) / Math.log(SCALE_FACTOR));
+
+const SCALE_FACTOR = 2;
+
+const finalizeArrayBuffer = ({contents, length}) => hasArrayBufferResize() ? contents : contents.slice(0, length);
+
+// `ArrayBuffer.slice()` is slow. When `ArrayBuffer.resize()` is available
+// (Node >=20.0.0, Safari >=16.4 and Chrome), we can use it instead.
+// eslint-disable-next-line no-warning-comments
+// TODO: remove after dropping support for Node 20.
+// eslint-disable-next-line no-warning-comments
+// TODO: use `ArrayBuffer.transferToFixedLength()` instead once it is available
+const hasArrayBufferResize = () => 'resize' in ArrayBuffer.prototype;
+
+const arrayBufferMethods = {
+	init: initArrayBuffer,
+	convertChunk: {
+		string: useTextEncoder,
+		buffer: useUint8Array,
+		arrayBuffer: useUint8Array,
+		dataView: useUint8ArrayWithOffset,
+		typedArray: useUint8ArrayWithOffset,
+		others: throwObjectStream,
+	},
+	getSize: getLengthProperty,
+	truncateChunk: truncateArrayBufferChunk,
+	addChunk: addArrayBufferChunk,
+	getFinalChunk: noop,
+	finalize: finalizeArrayBuffer,
+};
+
+;// CONCATENATED MODULE: ./node_modules/cacheable-request/node_modules/get-stream/source/buffer.js
+
+
+async function getStreamAsBuffer(stream, options) {
+	if (!('Buffer' in globalThis)) {
+		throw new Error('getStreamAsBuffer() is only supported in Node.js');
+	}
+
+	try {
+		return arrayBufferToNodeBuffer(await getStreamAsArrayBuffer(stream, options));
+	} catch (error) {
+		if (error.bufferedData !== undefined) {
+			error.bufferedData = arrayBufferToNodeBuffer(error.bufferedData);
+		}
+
+		throw error;
+	}
+}
+
+const arrayBufferToNodeBuffer = arrayBuffer => globalThis.Buffer.from(arrayBuffer);
+
 // EXTERNAL MODULE: ./node_modules/http-cache-semantics/index.js
 var http_cache_semantics = __nccwpck_require__(1002);
 ;// CONCATENATED MODULE: ./node_modules/lowercase-keys/index.js
@@ -39523,7 +41582,7 @@ class types_CacheError extends Error {
 class CacheableRequest {
     constructor(cacheRequest, cacheAdapter) {
         this.hooks = new Map();
-        this.request = () => (options, cb) => {
+        this.request = () => (options, callback) => {
             let url;
             if (typeof options === 'string') {
                 url = normalizeUrlObject(external_node_url_namespaceObject.parse(options));
@@ -39552,7 +41611,7 @@ class CacheableRequest {
             options.headers = Object.fromEntries(entries(options.headers).map(([key, value]) => [key.toLowerCase(), value]));
             const ee = new external_node_events_();
             const normalizedUrlString = normalizeUrl(external_node_url_namespaceObject.format(url), {
-                stripWWW: false,
+                stripWWW: false, // eslint-disable-line @typescript-eslint/naming-convention
                 removeTrailingSlash: false,
                 stripAuthentication: false,
             });
@@ -39597,7 +41656,9 @@ class CacheableRequest {
                                     .once('end', resolve);
                             });
                             const headers = convertHeaders(revalidatedPolicy.policy.responseHeaders());
-                            response = new Response({ statusCode: revalidate.statusCode, headers, body: revalidate.body, url: revalidate.url });
+                            response = new Response({
+                                statusCode: revalidate.statusCode, headers, body: revalidate.body, url: revalidate.url,
+                            });
                             response.cachePolicy = revalidatedPolicy.policy;
                             response.fromCache = true;
                         }
@@ -39611,10 +41672,10 @@ class CacheableRequest {
                         clonedResponse = cloneResponse(response);
                         (async () => {
                             try {
-                                const bodyPromise = get_stream.buffer(response);
+                                const bodyPromise = getStreamAsBuffer(response);
                                 await Promise.race([
                                     requestErrorPromise,
-                                    new Promise(resolve => response.once('end', resolve)),
+                                    new Promise(resolve => response.once('end', resolve)), // eslint-disable-line no-promise-executor-return
                                     new Promise(resolve => response.once('close', resolve)), // eslint-disable-line no-promise-executor-return
                                 ]);
                                 const body = await bodyPromise;
@@ -39653,8 +41714,8 @@ class CacheableRequest {
                         })();
                     }
                     ee.emit('response', clonedResponse ?? response);
-                    if (typeof cb === 'function') {
-                        cb(clonedResponse ?? response);
+                    if (typeof callback === 'function') {
+                        callback(clonedResponse ?? response);
                     }
                 };
                 try {
@@ -39679,12 +41740,14 @@ class CacheableRequest {
                     const policy = http_cache_semantics.fromObject(cacheEntry.cachePolicy);
                     if (policy.satisfiesWithoutRevalidation(options_) && !options_.forceRefresh) {
                         const headers = convertHeaders(policy.responseHeaders());
-                        const response = new Response({ statusCode: cacheEntry.statusCode, headers, body: cacheEntry.body, url: cacheEntry.url });
+                        const response = new Response({
+                            statusCode: cacheEntry.statusCode, headers, body: cacheEntry.body, url: cacheEntry.url,
+                        });
                         response.cachePolicy = policy;
                         response.fromCache = true;
                         ee.emit('response', response);
-                        if (typeof cb === 'function') {
-                            cb(response);
+                        if (typeof callback === 'function') {
+                            callback(response);
                         }
                     }
                     else if (policy.satisfiesWithoutRevalidation(options_) && Date.now() >= policy.timeToLive() && options_.forceRefresh) {
@@ -39717,14 +41780,14 @@ class CacheableRequest {
             })();
             return ee;
         };
-        this.addHook = (name, fn) => {
+        this.addHook = (name, function_) => {
             if (!this.hooks.has(name)) {
-                this.hooks.set(name, fn);
+                this.hooks.set(name, function_);
             }
         };
         this.removeHook = (name) => this.hooks.delete(name);
         this.getHook = (name) => this.hooks.get(name);
-        this.runHook = async (name, ...args) => this.hooks.get(name)?.(...args);
+        this.runHook = async (name, ...arguments_) => this.hooks.get(name)?.(...arguments_);
         if (cacheAdapter instanceof src) {
             this.cache = cacheAdapter;
         }
@@ -39786,244 +41849,671 @@ const onResponse = 'onResponse';
 //# sourceMappingURL=index.js.map
 // EXTERNAL MODULE: ./node_modules/decompress-response/index.js
 var decompress_response = __nccwpck_require__(2391);
-;// CONCATENATED MODULE: ./node_modules/form-data-encoder/lib/util/isFunction.js
-const isFunction = (value) => (typeof value === "function");
+;// CONCATENATED MODULE: ./node_modules/get-stream/source/contents.js
+const source_contents_getStreamContents = async (stream, {init, convertChunk, getSize, truncateChunk, addChunk, getFinalChunk, finalize}, {maxBuffer = Number.POSITIVE_INFINITY} = {}) => {
+	if (!contents_isAsyncIterable(stream)) {
+		throw new Error('The first argument must be a Readable, a ReadableStream, or an async iterable.');
+	}
 
-;// CONCATENATED MODULE: ./node_modules/form-data-encoder/lib/util/isFormData.js
+	const state = init();
+	state.length = 0;
 
-const isFormData = (value) => Boolean(value
-    && isFunction(value.constructor)
-    && value[Symbol.toStringTag] === "FormData"
-    && isFunction(value.append)
-    && isFunction(value.getAll)
-    && isFunction(value.entries)
-    && isFunction(value[Symbol.iterator]));
+	try {
+		for await (const chunk of stream) {
+			const chunkType = contents_getChunkType(chunk);
+			const convertedChunk = convertChunk[chunkType](chunk, state);
+			contents_appendChunk({convertedChunk, state, getSize, truncateChunk, addChunk, maxBuffer});
+		}
 
-;// CONCATENATED MODULE: ./node_modules/form-data-encoder/lib/util/getStreamIterator.js
+		contents_appendFinalChunk({state, convertChunk, getSize, truncateChunk, addChunk, getFinalChunk, maxBuffer});
+		return finalize(state);
+	} catch (error) {
+		error.bufferedData = finalize(state);
+		throw error;
+	}
+};
 
-const isAsyncIterable = (value) => (isFunction(value[Symbol.asyncIterator]));
+const contents_appendFinalChunk = ({state, getSize, truncateChunk, addChunk, getFinalChunk, maxBuffer}) => {
+	const convertedChunk = getFinalChunk(state);
+	if (convertedChunk !== undefined) {
+		contents_appendChunk({convertedChunk, state, getSize, truncateChunk, addChunk, maxBuffer});
+	}
+};
+
+const contents_appendChunk = ({convertedChunk, state, getSize, truncateChunk, addChunk, maxBuffer}) => {
+	const chunkSize = getSize(convertedChunk);
+	const newLength = state.length + chunkSize;
+
+	if (newLength <= maxBuffer) {
+		contents_addNewChunk(convertedChunk, state, addChunk, newLength);
+		return;
+	}
+
+	const truncatedChunk = truncateChunk(convertedChunk, maxBuffer - state.length);
+
+	if (truncatedChunk !== undefined) {
+		contents_addNewChunk(truncatedChunk, state, addChunk, maxBuffer);
+	}
+
+	throw new contents_MaxBufferError();
+};
+
+const contents_addNewChunk = (convertedChunk, state, addChunk, newLength) => {
+	state.contents = addChunk(convertedChunk, state, newLength);
+	state.length = newLength;
+};
+
+const contents_isAsyncIterable = stream => typeof stream === 'object' && stream !== null && typeof stream[Symbol.asyncIterator] === 'function';
+
+const contents_getChunkType = chunk => {
+	const typeOfChunk = typeof chunk;
+
+	if (typeOfChunk === 'string') {
+		return 'string';
+	}
+
+	if (typeOfChunk !== 'object' || chunk === null) {
+		return 'others';
+	}
+
+	// eslint-disable-next-line n/prefer-global/buffer
+	if (globalThis.Buffer?.isBuffer(chunk)) {
+		return 'buffer';
+	}
+
+	const prototypeName = contents_objectToString.call(chunk);
+
+	if (prototypeName === '[object ArrayBuffer]') {
+		return 'arrayBuffer';
+	}
+
+	if (prototypeName === '[object DataView]') {
+		return 'dataView';
+	}
+
+	if (
+		Number.isInteger(chunk.byteLength)
+		&& Number.isInteger(chunk.byteOffset)
+		&& contents_objectToString.call(chunk.buffer) === '[object ArrayBuffer]'
+	) {
+		return 'typedArray';
+	}
+
+	return 'others';
+};
+
+const {toString: contents_objectToString} = Object.prototype;
+
+class contents_MaxBufferError extends Error {
+	name = 'MaxBufferError';
+
+	constructor() {
+		super('maxBuffer exceeded');
+	}
+}
+
+;// CONCATENATED MODULE: ./node_modules/get-stream/source/utils.js
+const utils_identity = value => value;
+
+const utils_noop = () => undefined;
+
+const getContentsProp = ({contents}) => contents;
+
+const utils_throwObjectStream = chunk => {
+	throw new Error(`Streams in object mode are not supported: ${String(chunk)}`);
+};
+
+const getLengthProp = convertedChunk => convertedChunk.length;
+
+;// CONCATENATED MODULE: ./node_modules/get-stream/source/array.js
+
+
+
+async function getStreamAsArray(stream, options) {
+	return getStreamContents(stream, arrayMethods, options);
+}
+
+const initArray = () => ({contents: []});
+
+const increment = () => 1;
+
+const addArrayChunk = (convertedChunk, {contents}) => {
+	contents.push(convertedChunk);
+	return contents;
+};
+
+const arrayMethods = {
+	init: initArray,
+	convertChunk: {
+		string: utils_identity,
+		buffer: utils_identity,
+		arrayBuffer: utils_identity,
+		dataView: utils_identity,
+		typedArray: utils_identity,
+		others: utils_identity,
+	},
+	getSize: increment,
+	truncateChunk: utils_noop,
+	addChunk: addArrayChunk,
+	getFinalChunk: utils_noop,
+	finalize: getContentsProp,
+};
+
+;// CONCATENATED MODULE: ./node_modules/get-stream/source/array-buffer.js
+
+
+
+async function array_buffer_getStreamAsArrayBuffer(stream, options) {
+	return source_contents_getStreamContents(stream, array_buffer_arrayBufferMethods, options);
+}
+
+const array_buffer_initArrayBuffer = () => ({contents: new ArrayBuffer(0)});
+
+const array_buffer_useTextEncoder = chunk => array_buffer_textEncoder.encode(chunk);
+const array_buffer_textEncoder = new TextEncoder();
+
+const array_buffer_useUint8Array = chunk => new Uint8Array(chunk);
+
+const array_buffer_useUint8ArrayWithOffset = chunk => new Uint8Array(chunk.buffer, chunk.byteOffset, chunk.byteLength);
+
+const array_buffer_truncateArrayBufferChunk = (convertedChunk, chunkSize) => convertedChunk.slice(0, chunkSize);
+
+// `contents` is an increasingly growing `Uint8Array`.
+const array_buffer_addArrayBufferChunk = (convertedChunk, {contents, length: previousLength}, length) => {
+	const newContents = array_buffer_hasArrayBufferResize() ? array_buffer_resizeArrayBuffer(contents, length) : array_buffer_resizeArrayBufferSlow(contents, length);
+	new Uint8Array(newContents).set(convertedChunk, previousLength);
+	return newContents;
+};
+
+// Without `ArrayBuffer.resize()`, `contents` size is always a power of 2.
+// This means its last bytes are zeroes (not stream data), which need to be
+// trimmed at the end with `ArrayBuffer.slice()`.
+const array_buffer_resizeArrayBufferSlow = (contents, length) => {
+	if (length <= contents.byteLength) {
+		return contents;
+	}
+
+	const arrayBuffer = new ArrayBuffer(array_buffer_getNewContentsLength(length));
+	new Uint8Array(arrayBuffer).set(new Uint8Array(contents), 0);
+	return arrayBuffer;
+};
+
+// With `ArrayBuffer.resize()`, `contents` size matches exactly the size of
+// the stream data. It does not include extraneous zeroes to trim at the end.
+// The underlying `ArrayBuffer` does allocate a number of bytes that is a power
+// of 2, but those bytes are only visible after calling `ArrayBuffer.resize()`.
+const array_buffer_resizeArrayBuffer = (contents, length) => {
+	if (length <= contents.maxByteLength) {
+		contents.resize(length);
+		return contents;
+	}
+
+	const arrayBuffer = new ArrayBuffer(length, {maxByteLength: array_buffer_getNewContentsLength(length)});
+	new Uint8Array(arrayBuffer).set(new Uint8Array(contents), 0);
+	return arrayBuffer;
+};
+
+// Retrieve the closest `length` that is both >= and a power of 2
+const array_buffer_getNewContentsLength = length => array_buffer_SCALE_FACTOR ** Math.ceil(Math.log(length) / Math.log(array_buffer_SCALE_FACTOR));
+
+const array_buffer_SCALE_FACTOR = 2;
+
+const array_buffer_finalizeArrayBuffer = ({contents, length}) => array_buffer_hasArrayBufferResize() ? contents : contents.slice(0, length);
+
+// `ArrayBuffer.slice()` is slow. When `ArrayBuffer.resize()` is available
+// (Node >=20.0.0, Safari >=16.4 and Chrome), we can use it instead.
+// eslint-disable-next-line no-warning-comments
+// TODO: remove after dropping support for Node 20.
+// eslint-disable-next-line no-warning-comments
+// TODO: use `ArrayBuffer.transferToFixedLength()` instead once it is available
+const array_buffer_hasArrayBufferResize = () => 'resize' in ArrayBuffer.prototype;
+
+const array_buffer_arrayBufferMethods = {
+	init: array_buffer_initArrayBuffer,
+	convertChunk: {
+		string: array_buffer_useTextEncoder,
+		buffer: array_buffer_useUint8Array,
+		arrayBuffer: array_buffer_useUint8Array,
+		dataView: array_buffer_useUint8ArrayWithOffset,
+		typedArray: array_buffer_useUint8ArrayWithOffset,
+		others: utils_throwObjectStream,
+	},
+	getSize: getLengthProp,
+	truncateChunk: array_buffer_truncateArrayBufferChunk,
+	addChunk: array_buffer_addArrayBufferChunk,
+	getFinalChunk: utils_noop,
+	finalize: array_buffer_finalizeArrayBuffer,
+};
+
+;// CONCATENATED MODULE: ./node_modules/get-stream/source/buffer.js
+
+
+async function buffer_getStreamAsBuffer(stream, options) {
+	if (!('Buffer' in globalThis)) {
+		throw new Error('getStreamAsBuffer() is only supported in Node.js');
+	}
+
+	try {
+		return buffer_arrayBufferToNodeBuffer(await array_buffer_getStreamAsArrayBuffer(stream, options));
+	} catch (error) {
+		if (error.bufferedData !== undefined) {
+			error.bufferedData = buffer_arrayBufferToNodeBuffer(error.bufferedData);
+		}
+
+		throw error;
+	}
+}
+
+// eslint-disable-next-line n/prefer-global/buffer
+const buffer_arrayBufferToNodeBuffer = arrayBuffer => globalThis.Buffer.from(arrayBuffer);
+
+;// CONCATENATED MODULE: ./node_modules/get-stream/source/string.js
+
+
+
+async function getStreamAsString(stream, options) {
+	return getStreamContents(stream, stringMethods, options);
+}
+
+const initString = () => ({contents: '', textDecoder: new TextDecoder()});
+
+const useTextDecoder = (chunk, {textDecoder}) => textDecoder.decode(chunk, {stream: true});
+
+const addStringChunk = (convertedChunk, {contents}) => contents + convertedChunk;
+
+const truncateStringChunk = (convertedChunk, chunkSize) => convertedChunk.slice(0, chunkSize);
+
+const getFinalStringChunk = ({textDecoder}) => {
+	const finalChunk = textDecoder.decode();
+	return finalChunk === '' ? undefined : finalChunk;
+};
+
+const stringMethods = {
+	init: initString,
+	convertChunk: {
+		string: utils_identity,
+		buffer: useTextDecoder,
+		arrayBuffer: useTextDecoder,
+		dataView: useTextDecoder,
+		typedArray: useTextDecoder,
+		others: utils_throwObjectStream,
+	},
+	getSize: getLengthProp,
+	truncateChunk: truncateStringChunk,
+	addChunk: addStringChunk,
+	getFinalChunk: getFinalStringChunk,
+	finalize: getContentsProp,
+};
+
+;// CONCATENATED MODULE: ./node_modules/get-stream/source/index.js
+
+
+
+
+
+
+;// CONCATENATED MODULE: ./node_modules/form-data-encoder/lib/index.js
+var __accessCheck = (obj, member, msg) => {
+  if (!member.has(obj))
+    throw TypeError("Cannot " + msg);
+};
+var __privateGet = (obj, member, getter) => {
+  __accessCheck(obj, member, "read from private field");
+  return getter ? getter.call(obj) : member.get(obj);
+};
+var __privateAdd = (obj, member, value) => {
+  if (member.has(obj))
+    throw TypeError("Cannot add the same private member more than once");
+  member instanceof WeakSet ? member.add(obj) : member.set(obj, value);
+};
+var __privateSet = (obj, member, value, setter) => {
+  __accessCheck(obj, member, "write to private field");
+  setter ? setter.call(obj, value) : member.set(obj, value);
+  return value;
+};
+var __privateMethod = (obj, member, method) => {
+  __accessCheck(obj, member, "access private method");
+  return method;
+};
+
+// src/util/isFunction.ts
+var lib_isFunction = (value) => typeof value === "function";
+
+// src/util/isAsyncIterable.ts
+var lib_isAsyncIterable = (value) => lib_isFunction(value[Symbol.asyncIterator]);
+
+// src/util/chunk.ts
+var MAX_CHUNK_SIZE = 65536;
+function* chunk(value) {
+  if (value.byteLength <= MAX_CHUNK_SIZE) {
+    yield value;
+    return;
+  }
+  let offset = 0;
+  while (offset < value.byteLength) {
+    const size = Math.min(value.byteLength - offset, MAX_CHUNK_SIZE);
+    const buffer = value.buffer.slice(offset, offset + size);
+    offset += buffer.byteLength;
+    yield new Uint8Array(buffer);
+  }
+}
+
+// src/util/getStreamIterator.ts
 async function* readStream(readable) {
-    const reader = readable.getReader();
-    while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-            break;
-        }
-        yield value;
+  const reader = readable.getReader();
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
     }
+    yield value;
+  }
 }
-const getStreamIterator = (source) => {
-    if (isAsyncIterable(source)) {
-        return source;
-    }
-    if (isFunction(source.getReader)) {
-        return readStream(source);
-    }
-    throw new TypeError("Unsupported data source: Expected either ReadableStream or async iterable.");
+async function* chunkStream(stream) {
+  for await (const value of stream) {
+    yield* chunk(value);
+  }
+}
+var getStreamIterator = (source) => {
+  if (lib_isAsyncIterable(source)) {
+    return chunkStream(source);
+  }
+  if (lib_isFunction(source.getReader)) {
+    return chunkStream(readStream(source));
+  }
+  throw new TypeError(
+    "Unsupported data source: Expected either ReadableStream or async iterable."
+  );
 };
 
-;// CONCATENATED MODULE: ./node_modules/form-data-encoder/lib/util/createBoundary.js
-const alphabet = "abcdefghijklmnopqrstuvwxyz0123456789";
+// src/util/createBoundary.ts
+var alphabet = "abcdefghijklmnopqrstuvwxyz0123456789";
 function createBoundary() {
-    let size = 16;
-    let res = "";
-    while (size--) {
-        res += alphabet[(Math.random() * alphabet.length) << 0];
-    }
-    return res;
+  let size = 16;
+  let res = "";
+  while (size--) {
+    res += alphabet[Math.random() * alphabet.length << 0];
+  }
+  return res;
 }
 
-;// CONCATENATED MODULE: ./node_modules/form-data-encoder/lib/util/normalizeValue.js
-const normalizeValue = (value) => String(value)
-    .replace(/\r|\n/g, (match, i, str) => {
-    if ((match === "\r" && str[i + 1] !== "\n")
-        || (match === "\n" && str[i - 1] !== "\r")) {
-        return "\r\n";
-    }
-    return match;
+// src/util/normalizeValue.ts
+var normalizeValue = (value) => String(value).replace(/\r|\n/g, (match, i, str) => {
+  if (match === "\r" && str[i + 1] !== "\n" || match === "\n" && str[i - 1] !== "\r") {
+    return "\r\n";
+  }
+  return match;
 });
 
-;// CONCATENATED MODULE: ./node_modules/form-data-encoder/lib/util/isPlainObject.js
-const getType = (value) => (Object.prototype.toString.call(value).slice(8, -1).toLowerCase());
-function isPlainObject(value) {
-    if (getType(value) !== "object") {
-        return false;
-    }
-    const pp = Object.getPrototypeOf(value);
-    if (pp === null || pp === undefined) {
-        return true;
-    }
-    const Ctor = pp.constructor && pp.constructor.toString();
-    return Ctor === Object.toString();
+// src/util/isPlainObject.ts
+var getType = (value) => Object.prototype.toString.call(value).slice(8, -1).toLowerCase();
+function lib_isPlainObject(value) {
+  if (getType(value) !== "object") {
+    return false;
+  }
+  const pp = Object.getPrototypeOf(value);
+  if (pp === null || pp === void 0) {
+    return true;
+  }
+  const Ctor = pp.constructor && pp.constructor.toString();
+  return Ctor === Object.toString();
 }
 
-;// CONCATENATED MODULE: ./node_modules/form-data-encoder/lib/util/proxyHeaders.js
+// src/util/proxyHeaders.ts
 function getProperty(target, prop) {
-    if (typeof prop === "string") {
-        for (const [name, value] of Object.entries(target)) {
-            if (prop.toLowerCase() === name.toLowerCase()) {
-                return value;
-            }
-        }
+  if (typeof prop === "string") {
+    for (const [name, value] of Object.entries(target)) {
+      if (prop.toLowerCase() === name.toLowerCase()) {
+        return value;
+      }
     }
-    return undefined;
+  }
+  return void 0;
 }
-const proxyHeaders = (object) => new Proxy(object, {
+var proxyHeaders = (object) => new Proxy(
+  object,
+  {
     get: (target, prop) => getProperty(target, prop),
-    has: (target, prop) => getProperty(target, prop) !== undefined
-});
+    has: (target, prop) => getProperty(target, prop) !== void 0
+  }
+);
 
-;// CONCATENATED MODULE: ./node_modules/form-data-encoder/lib/util/escapeName.js
-const escapeName = (name) => String(name)
-    .replace(/\r/g, "%0D")
-    .replace(/\n/g, "%0A")
-    .replace(/"/g, "%22");
+// src/util/isFormData.ts
+var lib_isFormData = (value) => Boolean(
+  value && lib_isFunction(value.constructor) && value[Symbol.toStringTag] === "FormData" && lib_isFunction(value.append) && lib_isFunction(value.getAll) && lib_isFunction(value.entries) && lib_isFunction(value[Symbol.iterator])
+);
 
-;// CONCATENATED MODULE: ./node_modules/form-data-encoder/lib/util/isFile.js
+// src/util/escapeName.ts
+var escapeName = (name) => String(name).replace(/\r/g, "%0D").replace(/\n/g, "%0A").replace(/"/g, "%22");
 
-const isFile = (value) => Boolean(value
-    && typeof value === "object"
-    && isFunction(value.constructor)
-    && value[Symbol.toStringTag] === "File"
-    && isFunction(value.stream)
-    && value.name != null);
-const isFileLike = (/* unused pure expression or super */ null && (isFile));
+// src/util/isFile.ts
+var isFile = (value) => Boolean(
+  value && typeof value === "object" && lib_isFunction(value.constructor) && value[Symbol.toStringTag] === "File" && lib_isFunction(value.stream) && value.name != null
+);
 
-;// CONCATENATED MODULE: ./node_modules/form-data-encoder/lib/FormDataEncoder.js
-var __classPrivateFieldSet = (undefined && undefined.__classPrivateFieldSet) || function (receiver, state, value, kind, f) {
-    if (kind === "m") throw new TypeError("Private method is not writable");
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a setter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot write private member to an object whose class did not declare it");
-    return (kind === "a" ? f.call(receiver, value) : f ? f.value = value : state.set(receiver, value)), value;
+// src/FormDataEncoder.ts
+var defaultOptions = {
+  enableAdditionalHeaders: false
 };
-var __classPrivateFieldGet = (undefined && undefined.__classPrivateFieldGet) || function (receiver, state, kind, f) {
-    if (kind === "a" && !f) throw new TypeError("Private accessor was defined without a getter");
-    if (typeof state === "function" ? receiver !== state || !f : !state.has(receiver)) throw new TypeError("Cannot read private member from an object whose class did not declare it");
-    return kind === "m" ? f : kind === "a" ? f.call(receiver) : f ? f.value : state.get(receiver);
+var readonlyProp = { writable: false, configurable: false };
+var _CRLF, _CRLF_BYTES, _CRLF_BYTES_LENGTH, _DASHES, _encoder, _footer, _form, _options, _getFieldHeader, getFieldHeader_fn, _getContentLength, getContentLength_fn;
+var FormDataEncoder = class {
+  constructor(form, boundaryOrOptions, options) {
+    __privateAdd(this, _getFieldHeader);
+    /**
+     * Returns form-data content length
+     */
+    __privateAdd(this, _getContentLength);
+    __privateAdd(this, _CRLF, "\r\n");
+    __privateAdd(this, _CRLF_BYTES, void 0);
+    __privateAdd(this, _CRLF_BYTES_LENGTH, void 0);
+    __privateAdd(this, _DASHES, "-".repeat(2));
+    /**
+     * TextEncoder instance
+     */
+    __privateAdd(this, _encoder, new TextEncoder());
+    /**
+     * Returns form-data footer bytes
+     */
+    __privateAdd(this, _footer, void 0);
+    /**
+     * FormData instance
+     */
+    __privateAdd(this, _form, void 0);
+    /**
+     * Instance options
+     */
+    __privateAdd(this, _options, void 0);
+    if (!lib_isFormData(form)) {
+      throw new TypeError("Expected first argument to be a FormData instance.");
+    }
+    let boundary;
+    if (lib_isPlainObject(boundaryOrOptions)) {
+      options = boundaryOrOptions;
+    } else {
+      boundary = boundaryOrOptions;
+    }
+    if (!boundary) {
+      boundary = createBoundary();
+    }
+    if (typeof boundary !== "string") {
+      throw new TypeError("Expected boundary argument to be a string.");
+    }
+    if (options && !lib_isPlainObject(options)) {
+      throw new TypeError("Expected options argument to be an object.");
+    }
+    __privateSet(this, _form, Array.from(form.entries()));
+    __privateSet(this, _options, { ...defaultOptions, ...options });
+    __privateSet(this, _CRLF_BYTES, __privateGet(this, _encoder).encode(__privateGet(this, _CRLF)));
+    __privateSet(this, _CRLF_BYTES_LENGTH, __privateGet(this, _CRLF_BYTES).byteLength);
+    this.boundary = `form-data-boundary-${boundary}`;
+    this.contentType = `multipart/form-data; boundary=${this.boundary}`;
+    __privateSet(this, _footer, __privateGet(this, _encoder).encode(
+      `${__privateGet(this, _DASHES)}${this.boundary}${__privateGet(this, _DASHES)}${__privateGet(this, _CRLF).repeat(2)}`
+    ));
+    const headers = {
+      "Content-Type": this.contentType
+    };
+    const contentLength = __privateMethod(this, _getContentLength, getContentLength_fn).call(this);
+    if (contentLength) {
+      this.contentLength = contentLength;
+      headers["Content-Length"] = contentLength;
+    }
+    this.headers = proxyHeaders(Object.freeze(headers));
+    Object.defineProperties(this, {
+      boundary: readonlyProp,
+      contentType: readonlyProp,
+      contentLength: readonlyProp,
+      headers: readonlyProp
+    });
+  }
+  /**
+   * Creates an iterator allowing to go through form-data parts (with metadata).
+   * This method **will not** read the files and **will not** split values big into smaller chunks.
+   *
+   * Using this method, you can convert form-data content into Blob:
+   *
+   * @example
+   *
+   * ```ts
+   * import {Readable} from "stream"
+   *
+   * import {FormDataEncoder} from "form-data-encoder"
+   *
+   * import {FormData} from "formdata-polyfill/esm-min.js"
+   * import {fileFrom} from "fetch-blob/form.js"
+   * import {File} from "fetch-blob/file.js"
+   * import {Blob} from "fetch-blob"
+   *
+   * import fetch from "node-fetch"
+   *
+   * const form = new FormData()
+   *
+   * form.set("field", "Just a random string")
+   * form.set("file", new File(["Using files is class amazing"]))
+   * form.set("fileFromPath", await fileFrom("path/to/a/file.txt"))
+   *
+   * const encoder = new FormDataEncoder(form)
+   *
+   * const options = {
+   *   method: "post",
+   *   body: new Blob(encoder, {type: encoder.contentType})
+   * }
+   *
+   * const response = await fetch("https://httpbin.org/post", options)
+   *
+   * console.log(await response.json())
+   * ```
+   */
+  *values() {
+    for (const [name, raw] of __privateGet(this, _form)) {
+      const value = isFile(raw) ? raw : __privateGet(this, _encoder).encode(
+        normalizeValue(raw)
+      );
+      yield __privateMethod(this, _getFieldHeader, getFieldHeader_fn).call(this, name, value);
+      yield value;
+      yield __privateGet(this, _CRLF_BYTES);
+    }
+    yield __privateGet(this, _footer);
+  }
+  /**
+   * Creates an async iterator allowing to perform the encoding by portions.
+   * This method reads through files and splits big values into smaller pieces (65536 bytes per each).
+   *
+   * @example
+   *
+   * ```ts
+   * import {Readable} from "stream"
+   *
+   * import {FormData, File, fileFromPath} from "formdata-node"
+   * import {FormDataEncoder} from "form-data-encoder"
+   *
+   * import fetch from "node-fetch"
+   *
+   * const form = new FormData()
+   *
+   * form.set("field", "Just a random string")
+   * form.set("file", new File(["Using files is class amazing"], "file.txt"))
+   * form.set("fileFromPath", await fileFromPath("path/to/a/file.txt"))
+   *
+   * const encoder = new FormDataEncoder(form)
+   *
+   * const options = {
+   *   method: "post",
+   *   headers: encoder.headers,
+   *   body: Readable.from(encoder.encode()) // or Readable.from(encoder)
+   * }
+   *
+   * const response = await fetch("https://httpbin.org/post", options)
+   *
+   * console.log(await response.json())
+   * ```
+   */
+  async *encode() {
+    for (const part of this.values()) {
+      if (isFile(part)) {
+        yield* getStreamIterator(part.stream());
+      } else {
+        yield* chunk(part);
+      }
+    }
+  }
+  /**
+   * Creates an iterator allowing to read through the encoder data using for...of loops
+   */
+  [Symbol.iterator]() {
+    return this.values();
+  }
+  /**
+   * Creates an **async** iterator allowing to read through the encoder data using for-await...of loops
+   */
+  [Symbol.asyncIterator]() {
+    return this.encode();
+  }
 };
-var _FormDataEncoder_instances, _FormDataEncoder_CRLF, _FormDataEncoder_CRLF_BYTES, _FormDataEncoder_CRLF_BYTES_LENGTH, _FormDataEncoder_DASHES, _FormDataEncoder_encoder, _FormDataEncoder_footer, _FormDataEncoder_form, _FormDataEncoder_options, _FormDataEncoder_getFieldHeader, _FormDataEncoder_getContentLength;
-
-
-
-
-
-
-
-
-const defaultOptions = {
-    enableAdditionalHeaders: false
+_CRLF = new WeakMap();
+_CRLF_BYTES = new WeakMap();
+_CRLF_BYTES_LENGTH = new WeakMap();
+_DASHES = new WeakMap();
+_encoder = new WeakMap();
+_footer = new WeakMap();
+_form = new WeakMap();
+_options = new WeakMap();
+_getFieldHeader = new WeakSet();
+getFieldHeader_fn = function(name, value) {
+  let header = "";
+  header += `${__privateGet(this, _DASHES)}${this.boundary}${__privateGet(this, _CRLF)}`;
+  header += `Content-Disposition: form-data; name="${escapeName(name)}"`;
+  if (isFile(value)) {
+    header += `; filename="${escapeName(value.name)}"${__privateGet(this, _CRLF)}`;
+    header += `Content-Type: ${value.type || "application/octet-stream"}`;
+  }
+  if (__privateGet(this, _options).enableAdditionalHeaders === true) {
+    const size = isFile(value) ? value.size : value.byteLength;
+    if (size != null && !isNaN(size)) {
+      header += `${__privateGet(this, _CRLF)}Content-Length: ${size}`;
+    }
+  }
+  return __privateGet(this, _encoder).encode(`${header}${__privateGet(this, _CRLF).repeat(2)}`);
 };
-const readonlyProp = { writable: false, configurable: false };
-class FormDataEncoder {
-    constructor(form, boundaryOrOptions, options) {
-        _FormDataEncoder_instances.add(this);
-        _FormDataEncoder_CRLF.set(this, "\r\n");
-        _FormDataEncoder_CRLF_BYTES.set(this, void 0);
-        _FormDataEncoder_CRLF_BYTES_LENGTH.set(this, void 0);
-        _FormDataEncoder_DASHES.set(this, "-".repeat(2));
-        _FormDataEncoder_encoder.set(this, new TextEncoder());
-        _FormDataEncoder_footer.set(this, void 0);
-        _FormDataEncoder_form.set(this, void 0);
-        _FormDataEncoder_options.set(this, void 0);
-        if (!isFormData(form)) {
-            throw new TypeError("Expected first argument to be a FormData instance.");
-        }
-        let boundary;
-        if (isPlainObject(boundaryOrOptions)) {
-            options = boundaryOrOptions;
-        }
-        else {
-            boundary = boundaryOrOptions;
-        }
-        if (!boundary) {
-            boundary = createBoundary();
-        }
-        if (typeof boundary !== "string") {
-            throw new TypeError("Expected boundary argument to be a string.");
-        }
-        if (options && !isPlainObject(options)) {
-            throw new TypeError("Expected options argument to be an object.");
-        }
-        __classPrivateFieldSet(this, _FormDataEncoder_form, Array.from(form.entries()), "f");
-        __classPrivateFieldSet(this, _FormDataEncoder_options, { ...defaultOptions, ...options }, "f");
-        __classPrivateFieldSet(this, _FormDataEncoder_CRLF_BYTES, __classPrivateFieldGet(this, _FormDataEncoder_encoder, "f").encode(__classPrivateFieldGet(this, _FormDataEncoder_CRLF, "f")), "f");
-        __classPrivateFieldSet(this, _FormDataEncoder_CRLF_BYTES_LENGTH, __classPrivateFieldGet(this, _FormDataEncoder_CRLF_BYTES, "f").byteLength, "f");
-        this.boundary = `form-data-boundary-${boundary}`;
-        this.contentType = `multipart/form-data; boundary=${this.boundary}`;
-        __classPrivateFieldSet(this, _FormDataEncoder_footer, __classPrivateFieldGet(this, _FormDataEncoder_encoder, "f").encode(`${__classPrivateFieldGet(this, _FormDataEncoder_DASHES, "f")}${this.boundary}${__classPrivateFieldGet(this, _FormDataEncoder_DASHES, "f")}${__classPrivateFieldGet(this, _FormDataEncoder_CRLF, "f").repeat(2)}`), "f");
-        const headers = {
-            "Content-Type": this.contentType
-        };
-        const contentLength = __classPrivateFieldGet(this, _FormDataEncoder_instances, "m", _FormDataEncoder_getContentLength).call(this);
-        if (contentLength) {
-            this.contentLength = contentLength;
-            headers["Content-Length"] = contentLength;
-        }
-        this.headers = proxyHeaders(Object.freeze(headers));
-        Object.defineProperties(this, {
-            boundary: readonlyProp,
-            contentType: readonlyProp,
-            contentLength: readonlyProp,
-            headers: readonlyProp
-        });
+_getContentLength = new WeakSet();
+getContentLength_fn = function() {
+  let length = 0;
+  for (const [name, raw] of __privateGet(this, _form)) {
+    const value = isFile(raw) ? raw : __privateGet(this, _encoder).encode(
+      normalizeValue(raw)
+    );
+    const size = isFile(value) ? value.size : value.byteLength;
+    if (size == null || isNaN(size)) {
+      return void 0;
     }
-    getContentLength() {
-        return this.contentLength == null ? undefined : Number(this.contentLength);
-    }
-    *values() {
-        for (const [name, raw] of __classPrivateFieldGet(this, _FormDataEncoder_form, "f")) {
-            const value = isFile(raw) ? raw : __classPrivateFieldGet(this, _FormDataEncoder_encoder, "f").encode(normalizeValue(raw));
-            yield __classPrivateFieldGet(this, _FormDataEncoder_instances, "m", _FormDataEncoder_getFieldHeader).call(this, name, value);
-            yield value;
-            yield __classPrivateFieldGet(this, _FormDataEncoder_CRLF_BYTES, "f");
-        }
-        yield __classPrivateFieldGet(this, _FormDataEncoder_footer, "f");
-    }
-    async *encode() {
-        for (const part of this.values()) {
-            if (isFile(part)) {
-                yield* getStreamIterator(part.stream());
-            }
-            else {
-                yield part;
-            }
-        }
-    }
-    [(_FormDataEncoder_CRLF = new WeakMap(), _FormDataEncoder_CRLF_BYTES = new WeakMap(), _FormDataEncoder_CRLF_BYTES_LENGTH = new WeakMap(), _FormDataEncoder_DASHES = new WeakMap(), _FormDataEncoder_encoder = new WeakMap(), _FormDataEncoder_footer = new WeakMap(), _FormDataEncoder_form = new WeakMap(), _FormDataEncoder_options = new WeakMap(), _FormDataEncoder_instances = new WeakSet(), _FormDataEncoder_getFieldHeader = function _FormDataEncoder_getFieldHeader(name, value) {
-        let header = "";
-        header += `${__classPrivateFieldGet(this, _FormDataEncoder_DASHES, "f")}${this.boundary}${__classPrivateFieldGet(this, _FormDataEncoder_CRLF, "f")}`;
-        header += `Content-Disposition: form-data; name="${escapeName(name)}"`;
-        if (isFile(value)) {
-            header += `; filename="${escapeName(value.name)}"${__classPrivateFieldGet(this, _FormDataEncoder_CRLF, "f")}`;
-            header += `Content-Type: ${value.type || "application/octet-stream"}`;
-        }
-        const size = isFile(value) ? value.size : value.byteLength;
-        if (__classPrivateFieldGet(this, _FormDataEncoder_options, "f").enableAdditionalHeaders === true
-            && size != null
-            && !isNaN(size)) {
-            header += `${__classPrivateFieldGet(this, _FormDataEncoder_CRLF, "f")}Content-Length: ${isFile(value) ? value.size : value.byteLength}`;
-        }
-        return __classPrivateFieldGet(this, _FormDataEncoder_encoder, "f").encode(`${header}${__classPrivateFieldGet(this, _FormDataEncoder_CRLF, "f").repeat(2)}`);
-    }, _FormDataEncoder_getContentLength = function _FormDataEncoder_getContentLength() {
-        let length = 0;
-        for (const [name, raw] of __classPrivateFieldGet(this, _FormDataEncoder_form, "f")) {
-            const value = isFile(raw) ? raw : __classPrivateFieldGet(this, _FormDataEncoder_encoder, "f").encode(normalizeValue(raw));
-            const size = isFile(value) ? value.size : value.byteLength;
-            if (size == null || isNaN(size)) {
-                return undefined;
-            }
-            length += __classPrivateFieldGet(this, _FormDataEncoder_instances, "m", _FormDataEncoder_getFieldHeader).call(this, name, value).byteLength;
-            length += size;
-            length += __classPrivateFieldGet(this, _FormDataEncoder_CRLF_BYTES_LENGTH, "f");
-        }
-        return String(length + __classPrivateFieldGet(this, _FormDataEncoder_footer, "f").byteLength);
-    }, Symbol.iterator)]() {
-        return this.values();
-    }
-    [Symbol.asyncIterator]() {
-        return this.encode();
-    }
-}
+    length += __privateMethod(this, _getFieldHeader, getFieldHeader_fn).call(this, name, value).byteLength;
+    length += size;
+    length += __privateGet(this, _CRLF_BYTES_LENGTH);
+  }
+  return String(length + __privateGet(this, _footer).byteLength);
+};
+
 
 // EXTERNAL MODULE: external "node:util"
 var external_node_util_ = __nccwpck_require__(7261);
@@ -40061,8 +42551,8 @@ async function getBodySize(body, headers) {
 function proxyEvents(from, to, events) {
     const eventFunctions = {};
     for (const event of events) {
-        const eventFunction = (...args) => {
-            to.emit(event, ...args);
+        const eventFunction = (...arguments_) => {
+            to.emit(event, ...arguments_);
         };
         eventFunctions[event] = eventFunction;
         from.on(event, eventFunction);
@@ -40084,9 +42574,9 @@ const external_node_net_namespaceObject = require("node:net");
 function unhandle() {
     const handlers = [];
     return {
-        once(origin, event, fn) {
-            origin.once(event, fn);
-            handlers.push({ origin, event, fn });
+        once(origin, event, function_) {
+            origin.once(event, function_);
+            handlers.push({ origin, event, fn: function_ });
         },
         unhandleAll() {
             for (const handler of handlers) {
@@ -40102,29 +42592,20 @@ function unhandle() {
 
 
 const reentry = Symbol('reentry');
-const noop = () => { };
+const timed_out_noop = () => { };
 class timed_out_TimeoutError extends Error {
+    event;
+    code;
     constructor(threshold, event) {
         super(`Timeout awaiting '${event}' for ${threshold}ms`);
-        Object.defineProperty(this, "event", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: event
-        });
-        Object.defineProperty(this, "code", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
+        this.event = event;
         this.name = 'TimeoutError';
         this.code = 'ETIMEDOUT';
     }
 }
 function timedOut(request, delays, options) {
     if (reentry in request) {
-        return noop;
+        return timed_out_noop;
     }
     request[reentry] = true;
     const cancelers = [];
@@ -40264,19 +42745,9 @@ function urlToOptions(url) {
 
 ;// CONCATENATED MODULE: ./node_modules/got/dist/source/core/utils/weakable-map.js
 class WeakableMap {
+    weakMap;
+    map;
     constructor() {
-        Object.defineProperty(this, "weakMap", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "map", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
         this.weakMap = new WeakMap();
         this.map = new Map();
     }
@@ -40396,7 +42867,7 @@ const getIfaceInfo = () => {
 	return {has4, has6};
 };
 
-const isIterable = map => {
+const source_isIterable = map => {
 	return Symbol.iterator in map;
 };
 
@@ -40670,7 +43141,7 @@ class CacheableLookup {
 				};
 			}
 
-			if (isIterable(this._cache)) {
+			if (source_isIterable(this._cache)) {
 				this._tick(cacheTtl);
 			}
 		}
@@ -40800,7 +43271,7 @@ function parseLinkHeader(link) {
         const [rawUriReference, ...rawLinkParameters] = item.split(';');
         const trimmedUriReference = rawUriReference.trim();
         // eslint-disable-next-line @typescript-eslint/prefer-string-starts-ends-with
-        if (trimmedUriReference[0] !== '<' || trimmedUriReference[trimmedUriReference.length - 1] !== '>') {
+        if (trimmedUriReference[0] !== '<' || trimmedUriReference.at(-1) !== '>') {
             throw new Error(`Invalid format of the Link header reference: ${trimmedUriReference}`);
         }
         const reference = trimmedUriReference.slice(1, -1);
@@ -41003,7 +43474,7 @@ const defaultInternals = {
         shouldContinue: () => true,
         countLimit: Number.POSITIVE_INFINITY,
         backoff: 0,
-        requestLimit: 10000,
+        requestLimit: 10_000,
         stackAllItems: false,
     },
     setHost: true,
@@ -41124,31 +43595,11 @@ const init = (options, withOptions, self) => {
     }
 };
 class Options {
+    _unixOptions;
+    _internals;
+    _merging;
+    _init;
     constructor(input, options, defaults) {
-        Object.defineProperty(this, "_unixOptions", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_internals", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_merging", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_init", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
         assert.any([dist.string, dist.urlInstance, dist.object, dist.undefined], input);
         assert.any([dist.object, dist.undefined], options);
         assert.any([dist.object, dist.undefined], defaults);
@@ -41444,7 +43895,7 @@ class Options {
         return this._internals.body;
     }
     set body(value) {
-        assert.any([dist.string, dist.buffer, dist.nodeStream, dist.generator, dist.asyncGenerator, isFormData, dist.undefined], value);
+        assert.any([dist.string, dist.buffer, dist.nodeStream, dist.generator, dist.asyncGenerator, lib_isFormData, dist.undefined], value);
         if (dist.nodeStream(value)) {
             assert.truthy(value.readable);
         }
@@ -41829,7 +44280,9 @@ class Options {
         }
     }
     /**
-    Defines if redirect responses should be followed automatically.
+    Whether redirect responses should be followed automatically.
+
+    Optionally, pass a function to dynamically decide based on the response object.
 
     Note that if a `303` is sent by the server in response to any request type (`POST`, `DELETE`, etc.), Got will automatically request the resource pointed to in the location header via `GET`.
     This is in accordance with [the spec](https://tools.ietf.org/html/rfc7231#section-6.4.4). You can optionally turn on this behavior also for other redirect codes - see `methodRewriting`.
@@ -41840,7 +44293,7 @@ class Options {
         return this._internals.followRedirect;
     }
     set followRedirect(value) {
-        assert.boolean(value);
+        assert.any([dist.boolean, dist.function_], value);
         this._internals.followRedirect = value;
     }
     get followRedirects() {
@@ -42485,7 +44938,9 @@ class Options {
 
 const isResponseOk = (response) => {
     const { statusCode } = response;
-    const limitStatusCode = response.request.options.followRedirect ? 299 : 399;
+    const { followRedirect } = response.request.options;
+    const shouldFollow = typeof followRedirect === 'function' ? followRedirect(response) : followRedirect;
+    const limitStatusCode = shouldFollow ? 299 : 399;
     return (statusCode >= 200 && statusCode <= limitStatusCode) || statusCode === 304;
 };
 /**
@@ -42557,7 +45012,6 @@ function isUnixSocketURL(url) {
 
 
 
-const { buffer: getStreamAsBuffer } = get_stream;
 const supportsBrotli = dist.string(external_node_process_namespaceObject.versions.brotli);
 const methodsWithoutBody = new Set(['GET', 'HEAD']);
 const cacheableStore = new WeakableMap();
@@ -42571,165 +45025,40 @@ const proxiedRequestEvents = [
 ];
 const core_noop = () => { };
 class Request extends external_node_stream_.Duplex {
+    // @ts-expect-error - Ignoring for now.
+    ['constructor'];
+    _noPipe;
+    // @ts-expect-error https://github.com/microsoft/TypeScript/issues/9568
+    options;
+    response;
+    requestUrl;
+    redirectUrls;
+    retryCount;
+    _stopRetry;
+    _downloadedSize;
+    _uploadedSize;
+    _stopReading;
+    _pipedServerResponses;
+    _request;
+    _responseSize;
+    _bodySize;
+    _unproxyEvents;
+    _isFromCache;
+    _cannotHaveBody;
+    _triggerRead;
+    _cancelTimeouts;
+    _removeListeners;
+    _nativeResponse;
+    _flushed;
+    _aborted;
+    // We need this because `this._request` if `undefined` when using cache
+    _requestInitialized;
     constructor(url, options, defaults) {
         super({
             // Don't destroy immediately, as the error may be emitted on unsuccessful retry
             autoDestroy: false,
             // It needs to be zero because we're just proxying the data to another stream
             highWaterMark: 0,
-        });
-        // @ts-expect-error - Ignoring for now.
-        Object.defineProperty(this, 'constructor', {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_noPipe", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        // @ts-expect-error https://github.com/microsoft/TypeScript/issues/9568
-        Object.defineProperty(this, "options", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "response", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "requestUrl", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "redirectUrls", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "retryCount", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_stopRetry", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_downloadedSize", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_uploadedSize", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_stopReading", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_pipedServerResponses", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_request", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_responseSize", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_bodySize", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_unproxyEvents", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_isFromCache", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_cannotHaveBody", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_triggerRead", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_cancelTimeouts", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_removeListeners", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_nativeResponse", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_flushed", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "_aborted", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        // We need this because `this._request` if `undefined` when using cache
-        Object.defineProperty(this, "_requestInitialized", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
         });
         this._downloadedSize = 0;
         this._uploadedSize = 0;
@@ -42850,7 +45179,7 @@ class Request extends external_node_stream_.Duplex {
         void (async () => {
             // Node.js parser is really weird.
             // It emits post-request Parse Errors on the same instance as previous request. WTF.
-            // Therefore we need to check if it has been destroyed as well.
+            // Therefore, we need to check if it has been destroyed as well.
             //
             // Furthermore, Node.js 16 `response.destroy()` doesn't immediately destroy the socket,
             // but makes the response unreadable. So we additionally need to check `response.readable`.
@@ -43049,7 +45378,7 @@ class Request extends external_node_stream_.Duplex {
             const noContentType = !dist.string(headers['content-type']);
             if (isBody) {
                 // Body is spec-compliant FormData
-                if (isFormData(options.body)) {
+                if (lib_isFormData(options.body)) {
                     const encoder = new FormDataEncoder(options.body);
                     if (noContentType) {
                         headers['content-type'] = encoder.headers['Content-Type'];
@@ -43148,6 +45477,7 @@ class Request extends external_node_stream_.Duplex {
         if (dist.object(options.cookieJar) && rawCookies) {
             let promises = rawCookies.map(async (rawCookie) => options.cookieJar.setCookie(rawCookie, url.toString()));
             if (options.ignoreInvalidCookies) {
+                // eslint-disable-next-line @typescript-eslint/no-floating-promises
                 promises = promises.map(async (promise) => {
                     try {
                         await promise;
@@ -43167,76 +45497,79 @@ class Request extends external_node_stream_.Duplex {
         if (this.isAborted) {
             return;
         }
-        if (options.followRedirect && response.headers.location && redirectCodes.has(statusCode)) {
+        if (response.headers.location && redirectCodes.has(statusCode)) {
             // We're being redirected, we don't care about the response.
             // It'd be best to abort the request, but we can't because
             // we would have to sacrifice the TCP connection. We don't want that.
-            response.resume();
-            this._cancelTimeouts();
-            this._unproxyEvents();
-            if (this.redirectUrls.length >= options.maxRedirects) {
-                this._beforeError(new MaxRedirectsError(this));
-                return;
-            }
-            this._request = undefined;
-            const updatedOptions = new Options(undefined, undefined, this.options);
-            const serverRequestedGet = statusCode === 303 && updatedOptions.method !== 'GET' && updatedOptions.method !== 'HEAD';
-            const canRewrite = statusCode !== 307 && statusCode !== 308;
-            const userRequestedGet = updatedOptions.methodRewriting && canRewrite;
-            if (serverRequestedGet || userRequestedGet) {
-                updatedOptions.method = 'GET';
-                updatedOptions.body = undefined;
-                updatedOptions.json = undefined;
-                updatedOptions.form = undefined;
-                delete updatedOptions.headers['content-length'];
-            }
-            try {
-                // We need this in order to support UTF-8
-                const redirectBuffer = external_node_buffer_namespaceObject.Buffer.from(response.headers.location, 'binary').toString();
-                const redirectUrl = new URL(redirectBuffer, url);
-                if (!isUnixSocketURL(url) && isUnixSocketURL(redirectUrl)) {
-                    this._beforeError(new RequestError('Cannot redirect to UNIX socket', {}, this));
+            const shouldFollow = typeof options.followRedirect === 'function' ? options.followRedirect(typedResponse) : options.followRedirect;
+            if (shouldFollow) {
+                response.resume();
+                this._cancelTimeouts();
+                this._unproxyEvents();
+                if (this.redirectUrls.length >= options.maxRedirects) {
+                    this._beforeError(new MaxRedirectsError(this));
                     return;
                 }
-                // Redirecting to a different site, clear sensitive data.
-                if (redirectUrl.hostname !== url.hostname || redirectUrl.port !== url.port) {
-                    if ('host' in updatedOptions.headers) {
-                        delete updatedOptions.headers.host;
-                    }
-                    if ('cookie' in updatedOptions.headers) {
-                        delete updatedOptions.headers.cookie;
-                    }
-                    if ('authorization' in updatedOptions.headers) {
-                        delete updatedOptions.headers.authorization;
-                    }
-                    if (updatedOptions.username || updatedOptions.password) {
-                        updatedOptions.username = '';
-                        updatedOptions.password = '';
-                    }
+                this._request = undefined;
+                const updatedOptions = new Options(undefined, undefined, this.options);
+                const serverRequestedGet = statusCode === 303 && updatedOptions.method !== 'GET' && updatedOptions.method !== 'HEAD';
+                const canRewrite = statusCode !== 307 && statusCode !== 308;
+                const userRequestedGet = updatedOptions.methodRewriting && canRewrite;
+                if (serverRequestedGet || userRequestedGet) {
+                    updatedOptions.method = 'GET';
+                    updatedOptions.body = undefined;
+                    updatedOptions.json = undefined;
+                    updatedOptions.form = undefined;
+                    delete updatedOptions.headers['content-length'];
                 }
-                else {
-                    redirectUrl.username = updatedOptions.username;
-                    redirectUrl.password = updatedOptions.password;
+                try {
+                    // We need this in order to support UTF-8
+                    const redirectBuffer = external_node_buffer_namespaceObject.Buffer.from(response.headers.location, 'binary').toString();
+                    const redirectUrl = new URL(redirectBuffer, url);
+                    if (!isUnixSocketURL(url) && isUnixSocketURL(redirectUrl)) {
+                        this._beforeError(new RequestError('Cannot redirect to UNIX socket', {}, this));
+                        return;
+                    }
+                    // Redirecting to a different site, clear sensitive data.
+                    if (redirectUrl.hostname !== url.hostname || redirectUrl.port !== url.port) {
+                        if ('host' in updatedOptions.headers) {
+                            delete updatedOptions.headers.host;
+                        }
+                        if ('cookie' in updatedOptions.headers) {
+                            delete updatedOptions.headers.cookie;
+                        }
+                        if ('authorization' in updatedOptions.headers) {
+                            delete updatedOptions.headers.authorization;
+                        }
+                        if (updatedOptions.username || updatedOptions.password) {
+                            updatedOptions.username = '';
+                            updatedOptions.password = '';
+                        }
+                    }
+                    else {
+                        redirectUrl.username = updatedOptions.username;
+                        redirectUrl.password = updatedOptions.password;
+                    }
+                    this.redirectUrls.push(redirectUrl);
+                    updatedOptions.prefixUrl = '';
+                    updatedOptions.url = redirectUrl;
+                    for (const hook of updatedOptions.hooks.beforeRedirect) {
+                        // eslint-disable-next-line no-await-in-loop
+                        await hook(updatedOptions, typedResponse);
+                    }
+                    this.emit('redirect', updatedOptions, typedResponse);
+                    this.options = updatedOptions;
+                    await this._makeRequest();
                 }
-                this.redirectUrls.push(redirectUrl);
-                updatedOptions.prefixUrl = '';
-                updatedOptions.url = redirectUrl;
-                for (const hook of updatedOptions.hooks.beforeRedirect) {
-                    // eslint-disable-next-line no-await-in-loop
-                    await hook(updatedOptions, typedResponse);
+                catch (error) {
+                    this._beforeError(error);
+                    return;
                 }
-                this.emit('redirect', updatedOptions, typedResponse);
-                this.options = updatedOptions;
-                await this._makeRequest();
-            }
-            catch (error) {
-                this._beforeError(error);
                 return;
             }
-            return;
         }
         // `HTTPError`s always have `error.response.body` defined.
-        // Therefore we cannot retry if `options.throwHttpErrors` is false.
+        // Therefore, we cannot retry if `options.throwHttpErrors` is false.
         // On the last retry, if `options.throwHttpErrors` is false, we would need to return the body,
         // but that wouldn't be possible since the body would be already read in `error.response.body`.
         if (options.isStream && options.throwHttpErrors && !isResponseOk(typedResponse)) {
@@ -43286,7 +45619,7 @@ class Request extends external_node_stream_.Duplex {
         }
         try {
             // Errors are emitted via the `error` event
-            const rawBody = await getStreamAsBuffer(from);
+            const rawBody = await buffer_getStreamAsBuffer(from);
             // TODO: Switch to this:
             // let rawBody = await from.toArray();
             // rawBody = Buffer.concat(rawBody);
@@ -43483,9 +45816,7 @@ class Request extends external_node_stream_.Duplex {
                 break;
             }
         }
-        if (!request) {
-            request = options.getRequestFunction();
-        }
+        request ||= options.getRequestFunction();
         const url = options.url;
         this._requestOptions = options.createNativeRequestOptions();
         if (options.cache) {
@@ -43495,11 +45826,11 @@ class Request extends external_node_stream_.Duplex {
             this._prepareCache(options.cache);
         }
         // Cache support
-        const fn = options.cache ? this._createCacheableRequest : request;
+        const function_ = options.cache ? this._createCacheableRequest : request;
         try {
             // We can't do `await fn(...)`,
             // because stream `error` event can be emitted before `Promise.resolve()`.
-            let requestOrResponse = fn(url, this._requestOptions);
+            let requestOrResponse = function_(url, this._requestOptions);
             if (dist.promise(requestOrResponse)) {
                 requestOrResponse = await requestOrResponse;
             }
@@ -43733,7 +46064,13 @@ function asPromise(firstRequest) {
                     }
                     catch (error) {
                         // Fall back to `utf8`
-                        response.body = response.rawBody.toString();
+                        try {
+                            response.body = response.rawBody.toString();
+                        }
+                        catch (error) {
+                            request._beforeError(new ParseError(error, response));
+                            return;
+                        }
                         if (isResponseOk(response)) {
                             request._beforeError(error);
                             return;
@@ -43808,12 +46145,12 @@ function asPromise(firstRequest) {
         };
         makeRequest(0);
     });
-    promise.on = (event, fn) => {
-        emitter.on(event, fn);
+    promise.on = (event, function_) => {
+        emitter.on(event, function_);
         return promise;
     };
-    promise.off = (event, fn) => {
-        emitter.off(event, fn);
+    promise.off = (event, function_) => {
+        emitter.off(event, function_);
         return promise;
     };
     const shortcut = (responseType) => {
@@ -43882,9 +46219,7 @@ const create = (defaults) => {
             if (normalized.isStream) {
                 return request;
             }
-            if (!promise) {
-                promise = asPromise(request);
-            }
+            promise ||= asPromise(request);
             return promise;
         };
         let iteration = 0;
@@ -43892,9 +46227,7 @@ const create = (defaults) => {
             const handler = defaults.handlers[iteration++] ?? lastHandler;
             const result = handler(newOptions, iterateHandlers);
             if (dist.promise(result) && !request.options.isStream) {
-                if (!promise) {
-                    promise = asPromise(request);
-                }
+                promise ||= asPromise(request);
                 if (result !== promise) {
                     const descriptors = Object.getOwnPropertyDescriptors(promise);
                     for (const key in descriptors) {
@@ -44040,6 +46373,7 @@ const defaults = {
 };
 const got = source_create(defaults);
 /* harmony default export */ const got_dist_source = (got);
+// TODO: Remove this in the next major version.
 
 
 
@@ -44059,7 +46393,7 @@ const got = source_create(defaults);
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse('{"name":"action","version":"0.9.53","binaries":{"linux":"46cd9d2c74986f7329ca76dde6448f934231a53bd5b248da453505c8b97e6db6"}}');
+module.exports = JSON.parse('{"name":"action","version":"0.9.54","binaries":{"linux-x64":"d3e23023f42c093728c50334d0399e5e8924956b547fb6836fa77f757d05c11d","darwin-x64":"1ab7953542edfb38cbeb1cb963f1f5c8dfaccf5eeb4188d42f49c05ca1037e90","darwin-arm64":"cccfd3a010c4382d5f05db7d2ec08e5ed75e6fc7c676af9540e580613291c481","win32-x64":"5cbbab0244ab109b5f443efabf9486accdf6c8e287f11309b014ca9107b289db"}}');
 
 /***/ })
 
