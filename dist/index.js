@@ -37051,7 +37051,10 @@ function run() {
             throw new Error(`No GitHub token found`);
         }
         const GRAPH_FILE_DIR = ".github/workflows/graphs";
-        const graphFile = path_1.default.join(GRAPH_FILE_DIR, core.getInput("graph_file", { required: true }));
+        let graphFile = path_1.default.join(GRAPH_FILE_DIR, core.getInput("graph_file", { required: true }));
+        if (os_1.default.platform() === "win32") {
+            graphFile = graphFile.replace(/\\/g, "/");
+        }
         // Log output
         const sha = process.env.GITHUB_SHA;
         const repo = process.env.GITHUB_REPOSITORY;

@@ -163,10 +163,13 @@ async function run(): Promise<void> {
   }
   
   const GRAPH_FILE_DIR = ".github/workflows/graphs";
-  const graphFile = path.join(
+  let graphFile = path.join(
     GRAPH_FILE_DIR,
     core.getInput("graph_file", { required: true })
   );
+  if (os.platform() === "win32") {
+    graphFile = graphFile.replace(/\\/g, "/");
+  }
 
   // Log output
   const sha = process.env.GITHUB_SHA;
