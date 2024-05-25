@@ -6,6 +6,6 @@ jobs:
       name: Execute action graph
       steps:
         - name: Execute action graph
-          uses: actionforge/action@v0.8.31
+          uses: actionforge/action@1cb7c397d2c7caa8d8071041976b6f2e4e2ead20  # v0.9.58
           with:
             graph_file: build-and-publish.yml

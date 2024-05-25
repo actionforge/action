@@ -26,7 +26,7 @@ For a full introduction check out the [Actionforge Documentation](https://www.ac
 
 <!-- start usage -->
 ```yaml
-- uses: actionforge/action@v0.9.42
+- uses: actionforge/action@1cb7c397d2c7caa8d8071041976b6f2e4e2ead20  # v0.9.58
   with:
     # The name of the graph file located in the `.github/workflows/graphs` directory.
     # This file defines the Actionforge Action Graph to be executed.
