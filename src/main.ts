@@ -5,6 +5,7 @@ import * as util from "util";
 import * as crypto from "crypto";
 import * as tc from "@actions/tool-cache";
 import * as pjdata from './bundled_package.json';
+import * as pjson from './../package.json';
 
 import os from "os";
 import path from "path";
@@ -12,13 +13,15 @@ import fs from "fs";
 import got from "got";
 import cp from "child_process";
 
+const packageJson: Record<string, string> = pjson as unknown as Record<string, string>;
 const pj: BundledPackage = pjdata as unknown as BundledPackage;
 
 type BundledPackage = {
   name: string;
-  version: string;
   binaries: Record<string, string>;
 };
+
+const debugOutput = process.env.ACTIONS_STEP_DEBUG === 'true';
 
 /**
  * Represents information about a runner version,
@@ -35,7 +38,13 @@ export interface IRunnerVersionInfo {
  * @returns A Promise that resolves to the path of the extracted directory.
  */
 export async function extractArchive(archivePath: string): Promise<string> {
-  return archivePath.endsWith(".zip") ? tc.extractZip(archivePath) : tc.extractTar(archivePath);
+  if (archivePath.endsWith(".tar.gz")) {
+    return tc.extractTar(archivePath);
+  } else if (archivePath.endsWith(".zip")) {
+    return tc.extractZip(archivePath);
+  } else {
+    throw new Error(`Unsupported archive format: ${archivePath}`);
+  }
 }
 
 /**
@@ -61,7 +70,10 @@ export async function calculateFileHash(filePath: string): Promise<string> {
  */
 async function downloadRunner(info: IRunnerVersionInfo, token: string | null, hashCheck: boolean): Promise<string> {
   const tempDir = process.env.RUNNER_TEMP || '.';
-  const filename = path.join(tempDir, info.filename);
+  const zipPath = path.join(tempDir, info.filename + '.zip');
+  if (debugOutput) {
+    console.log(`📥 Downloaded zip to ${zipPath} from ${info.downloadUrl} 🚀`);
+  }
 
   const pipeline = util.promisify(stream.pipeline);
   await pipeline(
@@ -75,25 +87,29 @@ async function downloadRunner(info: IRunnerVersionInfo, token: string | null, ha
           ),
       },
     }),
-    fs.createWriteStream(filename)
+    fs.createWriteStream(zipPath)
   );
 
-  const extPath = await extractArchive(filename);
-  let execPath = path.join(extPath, info.filename);
+  const zipDstPath = await extractArchive(zipPath);
+  if (debugOutput) {
+    console.log(`📦 Extracted runner to ${zipDstPath}`);
+  }
+
+  let binPath = path.join(zipDstPath, info.filename);
   if (os.platform() === "linux" || os.platform() === "darwin") {
-    fs.chmodSync(execPath, 0o755);
+    fs.chmodSync(binPath, 0o755);
   } else {
-    execPath = execPath + ".exe";
+    binPath = binPath + ".exe";
   }
 
   if (hashCheck) {
-    const hash = await calculateFileHash(execPath);
+    const hash = await calculateFileHash(binPath);
     if (hash.length !== 64 || hash !== pj.binaries[`${os.platform()}-${os.arch()}`]) {
-      throw new Error(`Hash mismatch for ${execPath}`);
+      throw new Error(`Hash mismatch for ${binPath}`);
     }
   }
 
-  return execPath;
+  return binPath;
 }
 
 /**
@@ -184,16 +200,15 @@ async function run(): Promise<void> {
   if (runnerPath) {
     console.log("\u27a1 Custom runner path set:", runnerPath);
   } else {
-    const baseUrl = `https://github.com/actionforge/${pj.name}/releases/download/v${pj.version}`;
-    const archiveExt = os.platform() === "linux" ? "tar.gz" : "zip";
-    const downloadUrl = `${runnerBaseUrl.replace(/\/$/, "") || baseUrl}/graph-runner-${os.platform()}-${os.arch()}.${archiveExt}`;
+    const baseUrl = `https://github.com/actionforge/${pj.name}/releases/download/v${packageJson.version}`;
+    const downloadUrl = `${runnerBaseUrl.replace(/\/$/, "") || baseUrl}/graph-runner-${os.platform()}-${os.arch()}.zip`;
     if (runnerBaseUrl) {
       console.log("\u27a1 Custom runner URL set:", downloadUrl);
     }
   
     const downloadInfo = {
       downloadUrl: downloadUrl,
-      filename: 'graph-runner',
+      filename: `graph-runner-${os.platform()}-${os.arch()}`,
     };
   
     runnerPath = await downloadRunner(downloadInfo, runnerBaseUrl ? null : token, runnerBaseUrl ? false : true);

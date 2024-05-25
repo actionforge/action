@@ -36934,12 +36934,15 @@ const util = __importStar(__nccwpck_require__(3837));
 const crypto = __importStar(__nccwpck_require__(6113));
 const tc = __importStar(__nccwpck_require__(7784));
 const pjdata = __importStar(__nccwpck_require__(6055));
+const pjson = __importStar(__nccwpck_require__(4147));
 const os_1 = __importDefault(__nccwpck_require__(2037));
 const path_1 = __importDefault(__nccwpck_require__(1017));
 const fs_1 = __importDefault(__nccwpck_require__(7147));
 const got_1 = __importDefault(__nccwpck_require__(2401));
 const child_process_1 = __importDefault(__nccwpck_require__(2081));
+const packageJson = pjson;
 const pj = pjdata;
+const debugOutput = process.env.ACTIONS_STEP_DEBUG === 'true';
 /**
  * Extracts the contents of an archive file to a directory.
  * @param archivePath The path to the archive file.
@@ -36947,7 +36950,15 @@ const pj = pjdata;
  */
 function extractArchive(archivePath) {
     return __awaiter(this, void 0, void 0, function* () {
-        return archivePath.endsWith(".zip") ? tc.extractZip(archivePath) : tc.extractTar(archivePath);
+        if (archivePath.endsWith(".tar.gz")) {
+            return tc.extractTar(archivePath);
+        }
+        else if (archivePath.endsWith(".zip")) {
+            return tc.extractZip(archivePath);
+        }
+        else {
+            throw new Error(`Unsupported archive format: ${archivePath}`);
+        }
     });
 }
 exports.extractArchive = extractArchive;
@@ -36976,29 +36987,35 @@ exports.calculateFileHash = calculateFileHash;
 function downloadRunner(info, token, hashCheck) {
     return __awaiter(this, void 0, void 0, function* () {
         const tempDir = process.env.RUNNER_TEMP || '.';
-        const filename = path_1.default.join(tempDir, info.filename);
+        const zipPath = path_1.default.join(tempDir, info.filename + '.zip');
+        if (debugOutput) {
+            console.log(`📥 Downloaded zip to ${zipPath} from ${info.downloadUrl} 🚀`);
+        }
         const pipeline = util.promisify(stream.pipeline);
         yield pipeline(got_1.default.stream(info.downloadUrl, {
             method: "GET",
             headers: Object.assign({ "Accept": "application/octet-stream", "User-Agent": "GitHub Actions" }, (token ? {
                 "Authorization": `token ${token}`
             } : {})),
-        }), fs_1.default.createWriteStream(filename));
-        const extPath = yield extractArchive(filename);
-        let execPath = path_1.default.join(extPath, info.filename);
+        }), fs_1.default.createWriteStream(zipPath));
+        const zipDstPath = yield extractArchive(zipPath);
+        if (debugOutput) {
+            console.log(`📦 Extracted runner to ${zipDstPath}`);
+        }
+        let binPath = path_1.default.join(zipDstPath, info.filename);
         if (os_1.default.platform() === "linux" || os_1.default.platform() === "darwin") {
-            fs_1.default.chmodSync(execPath, 0o755);
+            fs_1.default.chmodSync(binPath, 0o755);
         }
         else {
-            execPath = execPath + ".exe";
+            binPath = binPath + ".exe";
         }
         if (hashCheck) {
-            const hash = yield calculateFileHash(execPath);
+            const hash = yield calculateFileHash(binPath);
             if (hash.length !== 64 || hash !== pj.binaries[`${os_1.default.platform()}-${os_1.default.arch()}`]) {
-                throw new Error(`Hash mismatch for ${execPath}`);
+                throw new Error(`Hash mismatch for ${binPath}`);
             }
         }
-        return execPath;
+        return binPath;
     });
 }
 /**
@@ -37068,15 +37085,14 @@ function run() {
             console.log("\u27a1 Custom runner path set:", runnerPath);
         }
         else {
-            const baseUrl = `https://github.com/actionforge/${pj.name}/releases/download/v${pj.version}`;
-            const archiveExt = os_1.default.platform() === "linux" ? "tar.gz" : "zip";
-            const downloadUrl = `${runnerBaseUrl.replace(/\/$/, "") || baseUrl}/graph-runner-${os_1.default.platform()}-${os_1.default.arch()}.${archiveExt}`;
+            const baseUrl = `https://github.com/actionforge/${pj.name}/releases/download/v${packageJson.version}`;
+            const downloadUrl = `${runnerBaseUrl.replace(/\/$/, "") || baseUrl}/graph-runner-${os_1.default.platform()}-${os_1.default.arch()}.zip`;
             if (runnerBaseUrl) {
                 console.log("\u27a1 Custom runner URL set:", downloadUrl);
             }
             const downloadInfo = {
                 downloadUrl: downloadUrl,
-                filename: 'graph-runner',
+                filename: `graph-runner-${os_1.default.platform()}-${os_1.default.arch()}`,
             };
             runnerPath = yield downloadRunner(downloadInfo, runnerBaseUrl ? null : token, runnerBaseUrl ? false : true);
         }
@@ -46392,11 +46408,19 @@ const got = source_create(defaults);
 
 /***/ }),
 
+/***/ 4147:
+/***/ ((module) => {
+
+"use strict";
+module.exports = JSON.parse('{"name":"action","version":"0.9.58","description":"","main":"dist/index.js","scripts":{"build":"tsc && ncc build src/main.ts -o dist","test":"echo \\"Error: no test specified\\" && exit 1","lint":"eslint src"},"keywords":["github","actions","workflows","node","graph"],"repository":{"type":"git","url":"git+https://github.com/actionforge/action.git"},"author":"Actionforge","license":"Actionforge Community License","bugs":{"url":"https://github.com/actionforge/action/issues"},"homepage":"https://github.com/actionforge/action#readme","dependencies":{"@actions/core":"^1.10.1","@actions/github":"^6.0.0","@actions/tool-cache":"^2.0.1","@octokit/action":"^7.0.0","got":"^14.3.0"},"devDependencies":{"@types/got":"^9.6.12","@types/node":"^20.12.12","@typescript-eslint/eslint-plugin":"^7.10.0","@typescript-eslint/parser":"^7.10.0","@vercel/ncc":"^0.38.1","eslint":"^8.56.0","typescript":"^5.4.5"}}');
+
+/***/ }),
+
 /***/ 6055:
 /***/ ((module) => {
 
 "use strict";
-module.exports = JSON.parse('{"name":"action","version":"0.9.54","binaries":{"linux-x64":"d3e23023f42c093728c50334d0399e5e8924956b547fb6836fa77f757d05c11d","darwin-x64":"1ab7953542edfb38cbeb1cb963f1f5c8dfaccf5eeb4188d42f49c05ca1037e90","darwin-arm64":"cccfd3a010c4382d5f05db7d2ec08e5ed75e6fc7c676af9540e580613291c481","win32-x64":"5cbbab0244ab109b5f443efabf9486accdf6c8e287f11309b014ca9107b289db"}}');
+module.exports = JSON.parse('{"name":"action","binaries":{"linux-x64":"6bf6dc96a334b2f7a975ad6a8f06a67e49401d476088f618b7d9dafb07a390e1","darwin-x64":"e60013321145db2365fe1bddbe6ba7f712de49d8af50936ba4877964617cb8c2","darwin-arm64":"7bcf44be4979c154fd7f06905b6b6fe0e0f39272d1c44d981cbff2a71eedfce1","win32-x64":"87db763ce2252fbb6e63f24ddadc2b4183f0bdfa39adbf1f1686d20b931c5247"}}');
 
 /***/ })
 

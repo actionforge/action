@@ -1,6 +1,12 @@
 entry: gh-start
 executions:
   - src:
+      node: github-com-actions-setup-node-cherry-grape-banana
+      port: exec
+    dst:
+      node: run-v1-strawberry-cat-blueberry
+      port: exec
+  - src:
       node: gh-start
       port: exec-on-push
     dst:
@@ -10,35 +16,59 @@ executions:
       node: github-com-actions-checkout-coconut-coconut-banana
       port: exec
     dst:
+      node: branch-v1-orange-giraffe-lion
+      port: exec
+  - src:
+      node: branch-v1-orange-giraffe-lion
+      port: exec-then
+    dst:
+      node: run-v1-brown-brown-panda
+      port: exec
+  - src:
+      node: run-v1-brown-brown-panda
+      port: exec-success
+    dst:
       node: github-com-actions-setup-node-cherry-grape-banana
       port: exec
   - src:
+      node: branch-v1-orange-giraffe-lion
+      port: exec-otherwise
+    dst:
       node: github-com-actions-setup-node-cherry-grape-banana
       port: exec
+connections:
+  - src:
+      node: env-get-v1-grape-tiger-cherry
+      port: env
     dst:
-      node: run-v1-strawberry-cat-blueberry
-      port: exec
-connections: []
+      node: string-match-v1-panda-orange-gold
+      port: str1
+  - src:
+      node: string-match-v1-panda-orange-gold
+      port: result
+    dst:
+      node: branch-v1-orange-giraffe-lion
+      port: condition
 nodes:
   - id: gh-start
     type: gh-start@v1
     position:
-      x: 100
-      y: 100
+      x: -380
+      y: 150
     settings:
       folded: false
   - id: github-com-actions-checkout-coconut-coconut-banana
-    type: github.com/actions/checkout
+    type: github.com/actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
     position:
-      x: 670
-      y: 230
+      x: 130
+      y: 50
     settings:
       folded: false
   - id: github-com-actions-setup-node-cherry-grape-banana
-    type: github.com/actions/setup-node
+    type: github.com/actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8
     position:
-      x: 1300
-      y: 360
+      x: 1360
+      y: 110
     inputs:
       node-version: v20.10.0
     settings:
@@ -46,12 +76,55 @@ nodes:
   - id: run-v1-strawberry-cat-blueberry
     type: run@v1
     position:
-      x: 1810
-      y: 450
+      x: 1920
+      y: 90
     inputs:
       script: |-
         npm install
         npm run lint
+    settings:
+      folded: false
+  - id: run-v1-brown-brown-panda
+    type: run@v1
+    position:
+      x: 950
+      y: -130
+    inputs:
+      script: |-
+        # Ensure the version in package.json matches the current git tag
+        PACKAGE_VERSION=$(jq -r '.version' package.json)
+        TAG_VERSION=${GITHUB_REF_NAME#v}
+
+        if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
+          echo "Version mismatch: package.json version is $PACKAGE_VERSION, but tag is v$TAG_VERSION"
+          exit 1
+        fi
+    settings:
+      folded: false
+  - id: env-get-v1-grape-tiger-cherry
+    type: env-get@v1
+    position:
+      x: -70
+      y: 1090
+    inputs:
+      env: GITHUB_REF
+    settings:
+      folded: false
+  - id: string-match-v1-panda-orange-gold
+    type: string-match@v1
+    position:
+      x: 270
+      y: 930
+    inputs:
+      op: startswith
+      str2: refs/tags/
+    settings:
+      folded: false
+  - id: branch-v1-orange-giraffe-lion
+    type: branch@v1
+    position:
+      x: 680
+      y: 220
     settings:
       folded: false
 registries: []

@@ -1,10 +1,9 @@
 {
   "name": "action",
-  "version": "0.9.54",
   "binaries": {
-    "linux-x64": "d3e23023f42c093728c50334d0399e5e8924956b547fb6836fa77f757d05c11d",
-    "darwin-x64": "1ab7953542edfb38cbeb1cb963f1f5c8dfaccf5eeb4188d42f49c05ca1037e90",
-    "darwin-arm64": "cccfd3a010c4382d5f05db7d2ec08e5ed75e6fc7c676af9540e580613291c481",
-    "win32-x64": "5cbbab0244ab109b5f443efabf9486accdf6c8e287f11309b014ca9107b289db"
+    "linux-x64": "6bf6dc96a334b2f7a975ad6a8f06a67e49401d476088f618b7d9dafb07a390e1",
+    "darwin-x64": "e60013321145db2365fe1bddbe6ba7f712de49d8af50936ba4877964617cb8c2",
+    "darwin-arm64": "7bcf44be4979c154fd7f06905b6b6fe0e0f39272d1c44d981cbff2a71eedfce1",
+    "win32-x64": "87db763ce2252fbb6e63f24ddadc2b4183f0bdfa39adbf1f1686d20b931c5247"
   }
 }
