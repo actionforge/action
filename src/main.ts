@@ -142,7 +142,9 @@ async function executeRunner(
 
   const customEnv = {
     ...process.env,
-    GRAPH_FILE: graphFile,
+    ACT_GRAPH_FILE: graphFile, // new env var
+    GRAPH_FILE: graphFile, // deprecated env var
+
     INPUT_MATRIX: matrix,
     INPUT_INPUTS: inputs,
     INPUT_SECRETS: secrets,
