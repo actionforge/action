@@ -150,7 +150,7 @@ async function executeRunner(
     INPUT_SECRETS: secrets,
   };
   console.log(`🟢 Running graph-runner`, graphFile);
-  cp.execSync(runnerPath, { stdio: ['inherit', 'pipe', 'pipe'], env: customEnv });
+  cp.execSync(runnerPath, { stdio: "inherit", env: customEnv });
 }
 
 /**

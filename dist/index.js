@@ -37039,7 +37039,7 @@ function executeRunner(runnerPath, graphFile, inputs, matrix, secrets) {
         fs_1.default.writeFileSync(graphFile, buf.toString("utf-8"));
         const customEnv = Object.assign(Object.assign({}, process.env), { ACT_GRAPH_FILE: graphFile, GRAPH_FILE: graphFile, INPUT_MATRIX: matrix, INPUT_INPUTS: inputs, INPUT_SECRETS: secrets });
         console.log(`🟢 Running graph-runner`, graphFile);
-        child_process_1.default.execSync(runnerPath, { stdio: ['inherit', 'pipe', 'pipe'], env: customEnv });
+        child_process_1.default.execSync(runnerPath, { stdio: "inherit", env: customEnv });
     });
 }
 /**
