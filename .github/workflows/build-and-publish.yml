@@ -1,0 +1,41 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["**"]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+      - name: Check if Version Validation is Required
+        id: check_tag
+        run: |
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "is_tag=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_tag=false" >> $GITHUB_OUTPUT
+          fi
+      - name: Validate Version Match
+        if: steps.check_tag.outputs.is_tag == 'true'
+        run: |
+          # Ensure the version in package.json matches the current git tag
+          PACKAGE_VERSION=$(jq -r '.version' package.json)
+          TAG_VERSION=${GITHUB_REF_NAME#v}
+
+          if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
+            echo "Version mismatch: package.json version is $PACKAGE_VERSION, but tag is v$TAG_VERSION"
+            exit 1
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22.12.0'
+      - name: Install and Lint
+        run: |
+          npm install
+          npm run lint

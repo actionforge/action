@@ -1,0 +1,52 @@
+{
+  "name": "action",
+  "version": "0.0.1",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc && ncc build src/main.ts -o dist",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "generate-checksums": "ts-node src/generate-checksums.ts",
+    "ts-node": "ts-node",
+    "lint": "eslint src"
+  },
+  "keywords": [
+    "github",
+    "actions",
+    "workflows",
+    "node",
+    "graph"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/actionforge/action.git"
+  },
+  "author": "Actionforge",
+  "license": "unknown",
+  "bugs": {
+    "url": "https://github.com/actionforge/action/issues"
+  },
+  "homepage": "https://github.com/actionforge/action#readme",
+  "dependencies": {
+    "@actions/core": "^2.0.1",
+    "@actions/github": "^6.0.1",
+    "@actions/tool-cache": "^2.0.2",
+    "@octokit/action": "^8.0.4",
+    "@types/adm-zip": "^0.5.7",
+    "@types/tar": "^6.1.13",
+    "adm-zip": "^0.5.16",
+    "axios": "^1.13.2",
+    "got": "^14.6.6",
+    "tar": "^7.5.2",
+    "ts-node": "^10.9.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@types/got": "^9.6.12",
+    "@types/node": "^25.0.3",
+    "@vercel/ncc": "^0.38.4",
+    "eslint": "^9.39.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.52.0"
+  }
+}

@@ -1,0 +1,58 @@
+name: 'Actionforge'
+author: 'sebastianrath'
+description: 'Execute Actionforge Action Graphs directly within your GitHub Workflows.'
+
+branding:
+  icon: 'share-2'
+  color: 'green'
+
+inputs:
+  graph_file:
+    description: 'The path to the .yaml graph file (relative to .github/workflows/graphs).'
+    required: true
+
+  github_token:
+    description: 'The token for GitHub API authentication.'
+    default: ${{ github.token }}
+    required: false
+
+  inputs:
+    description: 'JSON string of inputs for the graph.'
+    required: false
+    default: '{}'
+
+  secrets:
+    description: 'JSON string of secrets for the graph.'
+    required: false
+    default: '{}'
+
+  matrix:
+    description: 'JSON string representing the execution matrix.'
+    required: false
+    default: '{}'
+
+  needs:
+    description: 'JSON string representing previous job outputs (needs).'
+    required: false
+    default: '{}'
+
+  create_debug_session:
+    description: 'If "true", initiates a remote debugging session.'
+    required: false
+    default: 'false'
+
+  session_token:
+    description: 'Pre-existing session token for remote debugging.'
+    required: false
+
+  runner_base_url:
+    description: 'Custom URL to download the graph runner binary.'
+    required: false
+
+  runner_path:
+    description: 'Path to a custom graph runner binary.'
+    required: false
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

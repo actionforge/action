@@ -1,0 +1,12 @@
+{
+  "name": "action",
+  "version": "0.0.1",
+  "binaries": {
+    "linux-x64": "29253b43d18f16b25c84ad5e7638f956c38e2ab53366b49c9a5b5cc18d8d4bc8",
+    "linux-arm64": "172d02dfda17b1603715c811c618226beea503fc25eb94850278de924ad25054",
+    "darwin-x64": "9ad81f570ec5233549feb53f9aab9fe58b9f29d2236957d00030dd017d4d4ff3",
+    "darwin-arm64": "bec721ce5eaa7628715eb112001a422327389b7aa726ea2b6e42fe50a7fd115e",
+    "win32-x64": "fa73bfee6acff93233a78b072e61664dca75e289797fd656ac299c2b14d25847",
+    "win32-arm64": "bad30fb2e3505baa48452af29a1dce590ab80df90acc4348ea617bcc8c141660"
+  }
+}

@@ -1,0 +1,113 @@
+entry: gh-start
+nodes:
+  - id: gh-start
+    type: core/gh-start@v1
+    position:
+      x: -380
+      y: 150
+  - id: github-com-actions-checkout-coconut-coconut-banana
+    type: github.com/actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+    position:
+      x: 130
+      y: 50
+  - id: github-com-actions-setup-node-cherry-grape-banana
+    type: github.com/actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8
+    position:
+      x: 1360
+      y: 110
+    inputs:
+      node-version: v20.10.0
+  - id: run-v1-strawberry-cat-blueberry
+    type: core/run@v1
+    position:
+      x: 1920
+      y: 90
+    inputs:
+      script: |-
+        npm install
+        npm run lint
+  - id: run-v1-brown-brown-panda
+    type: core/run@v1
+    position:
+      x: 950
+      y: -130
+    inputs:
+      script: |-
+        # Ensure the version in package.json matches the current git tag
+        PACKAGE_VERSION=$(jq -r '.version' package.json)
+        TAG_VERSION=${GITHUB_REF_NAME#v}
+
+        if [ "$PACKAGE_VERSION" != "$TAG_VERSION" ]; then
+          echo "Version mismatch: package.json version is $PACKAGE_VERSION, but tag is v$TAG_VERSION"
+          exit 1
+        fi
+  - id: env-get-v1-grape-tiger-cherry
+    type: core/env-get@v1
+    position:
+      x: -70
+      y: 1090
+    inputs:
+      env: GITHUB_REF
+  - id: string-match-v1-panda-orange-gold
+    type: core/string-match@v1
+    position:
+      x: 270
+      y: 930
+    inputs:
+      op: startswith
+      str2: refs/tags/
+  - id: branch-v1-orange-giraffe-lion
+    type: core/branch@v1
+    position:
+      x: 680
+      y: 220
+connections:
+  - src:
+      node: env-get-v1-grape-tiger-cherry
+      port: env
+    dst:
+      node: string-match-v1-panda-orange-gold
+      port: str1
+  - src:
+      node: string-match-v1-panda-orange-gold
+      port: result
+    dst:
+      node: branch-v1-orange-giraffe-lion
+      port: condition
+executions:
+  - src:
+      node: github-com-actions-setup-node-cherry-grape-banana
+      port: exec
+    dst:
+      node: run-v1-strawberry-cat-blueberry
+      port: exec
+  - src:
+      node: github-com-actions-checkout-coconut-coconut-banana
+      port: exec
+    dst:
+      node: branch-v1-orange-giraffe-lion
+      port: exec
+  - src:
+      node: branch-v1-orange-giraffe-lion
+      port: exec-then
+    dst:
+      node: run-v1-brown-brown-panda
+      port: exec
+  - src:
+      node: run-v1-brown-brown-panda
+      port: exec-success
+    dst:
+      node: github-com-actions-setup-node-cherry-grape-banana
+      port: exec
+  - src:
+      node: branch-v1-orange-giraffe-lion
+      port: exec-otherwise
+    dst:
+      node: github-com-actions-setup-node-cherry-grape-banana
+      port: exec
+  - src:
+      node: gh-start
+      port: exec-on_push
+    dst:
+      node: github-com-actions-checkout-coconut-coconut-banana
+      port: exec
