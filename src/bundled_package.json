@@ -1,12 +1,12 @@
 {
   "name": "action",
-  "version": "0.10.6",
+  "version": "0.12.6",
   "binaries": {
-    "linux-x64": "c07c730e312b4eca37d6dc5ed89a5f8e4b8e9217690d762a5ef7e21bd50862e0",
-    "linux-arm64": "1f48cc1205aa349c9e7c5a2a92c7f276c8d7ea9113ea7333b3b8f485a4b7fc56",
-    "darwin-x64": "b34dc36d59a6754c437a87388449a385539e0de6db3260a27bea2af31417cb0e",
-    "darwin-arm64": "f1091c027eae3dc136f41890602cfdb433cd28c846aa6e8fd8aae6952d074234",
-    "win32-x64": "85e03bbd9f754d2cd0f4063d7af22399fb5d11d739186cf662817e0912b7f6f2",
-    "win32-arm64": "057697616c5b53e4ecdff94effcc9521cc36cf440781640bec44e9738e54a85e"
+    "linux-x64": "56db59897c921f55df0cc3ccfe531de341e44c8e9b55767aa8e7fb53a70437e9",
+    "linux-arm64": "71e22af2c1aac7c139421559294f284f0140b7e8847fea6edc7f514d6a952d32",
+    "darwin-x64": "05f95c8228e62851aad011fd7a8965f2a8a93528af4f01c01301d0a8a4b8aaa1",
+    "darwin-arm64": "bab242c2d14a92a3741896b4b7c4b62a0f73f3925c543d191d44a0db9dce8968",
+    "win32-x64": "6c565cc58958e71c277e05d35f82e5043f771bfa34fc7abb10d96503fab7cbcc",
+    "win32-arm64": "0a7c8cca2a68468c991ba456a8aff4a28acc8ed6a79bcace7103da7726fbceac"
   }
 }
