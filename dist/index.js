@@ -38141,7 +38141,7 @@ module.exports = parseParams
 /***/ ((module) => {
 
 "use strict";
-module.exports = /*#__PURE__*/JSON.parse('{"name":"action","version":"0.12.6","description":"","main":"dist/index.js","scripts":{"build":"tsc && ncc build src/main.ts -o dist","test":"echo \\"Error: no test specified\\" && exit 1","generate-checksums":"ts-node src/generate-checksums.ts","ts-node":"ts-node","lint":"eslint src"},"keywords":["github","actions","workflows","node","graph"],"repository":{"type":"git","url":"git+https://github.com/actionforge/action.git"},"author":"Actionforge","license":"unknown","bugs":{"url":"https://github.com/actionforge/action/issues"},"homepage":"https://github.com/actionforge/action#readme","dependencies":{"@actions/core":"^2.0.1","@actions/github":"^6.0.1","@actions/tool-cache":"^2.0.2","@octokit/action":"^8.0.4","@types/adm-zip":"^0.5.7","@types/tar":"^6.1.13","adm-zip":"^0.5.16","axios":"^1.13.2","got":"^14.6.6","tar":"^7.5.2","ts-node":"^10.9.2"},"devDependencies":{"@eslint/js":"^9.39.2","@types/got":"^9.6.12","@types/node":"^25.0.3","@vercel/ncc":"^0.38.4","eslint":"^9.39.2","typescript":"^5.9.3","typescript-eslint":"^8.52.0"}}');
+module.exports = /*#__PURE__*/JSON.parse('{"name":"action","version":"0.14.5","description":"","main":"dist/index.js","scripts":{"build":"tsc && ncc build src/main.ts -o dist","test":"echo \\"Error: no test specified\\" && exit 1","generate-checksums":"ts-node src/generate-checksums.ts","ts-node":"ts-node","lint":"eslint src"},"keywords":["github","actions","workflows","node","graph"],"repository":{"type":"git","url":"git+https://github.com/actionforge/action.git"},"author":"Actionforge","license":"unknown","bugs":{"url":"https://github.com/actionforge/action/issues"},"homepage":"https://github.com/actionforge/action#readme","dependencies":{"@actions/core":"^2.0.1","@actions/github":"^6.0.1","@actions/tool-cache":"^2.0.2","@octokit/action":"^8.0.4","@types/adm-zip":"^0.5.7","@types/tar":"^6.1.13","adm-zip":"^0.5.16","axios":"^1.13.2","got":"^14.6.6","tar":"^7.5.2","ts-node":"^10.9.2"},"devDependencies":{"@eslint/js":"^9.39.2","@types/got":"^9.6.12","@types/node":"^25.0.3","@vercel/ncc":"^0.38.4","eslint":"^9.39.2","typescript":"^5.9.3","typescript-eslint":"^8.52.0"}}');
 
 /***/ }),
 
@@ -38149,7 +38149,7 @@ module.exports = /*#__PURE__*/JSON.parse('{"name":"action","version":"0.12.6","d
 /***/ ((module) => {
 
 "use strict";
-module.exports = /*#__PURE__*/JSON.parse('{"name":"action","version":"0.12.6","binaries":{"linux-x64":"56db59897c921f55df0cc3ccfe531de341e44c8e9b55767aa8e7fb53a70437e9","linux-arm64":"71e22af2c1aac7c139421559294f284f0140b7e8847fea6edc7f514d6a952d32","darwin-x64":"05f95c8228e62851aad011fd7a8965f2a8a93528af4f01c01301d0a8a4b8aaa1","darwin-arm64":"bab242c2d14a92a3741896b4b7c4b62a0f73f3925c543d191d44a0db9dce8968","win32-x64":"6c565cc58958e71c277e05d35f82e5043f771bfa34fc7abb10d96503fab7cbcc","win32-arm64":"0a7c8cca2a68468c991ba456a8aff4a28acc8ed6a79bcace7103da7726fbceac"}}');
+module.exports = /*#__PURE__*/JSON.parse('{"name":"action","version":"0.14.5","binaries":{"linux-x64":"ef85fdf1f6ce8b2ee58b57708768d51a7fcb7880d616faee2aca35e614c25f3c","linux-arm64":"954f44b4ee47238eba2ba95995cc5d5a35ae4d6b2e69e3f6e7bd46ed1fbd5cc9","darwin-x64":"d77d6e4c7741c287754c48c49bf4ca750648e14682a217bcbfabca12b3379a7b","darwin-arm64":"dab55717f3ab76bcf3feec883d8e3104209daa7e180cb938343b8df738f7e021","win32-x64":"0eb8245f2294b803bbbe405f61857df3ecc39bcb5ebc567d1fc4b27b186fa016","win32-arm64":"5321ae673ba7382b3f43fdde11792bd7d22ad6b33a9aa0eb09a0ed47a52cdcee"}}');
 
 /***/ })
 
