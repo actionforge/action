@@ -146,21 +146,36 @@ function assertValidString(o?: string | null): string {
   return (o === null || o === undefined || o === "" || o === "null" || o === "{}") ? "" : o;
 }
 
+// Helper to support both hyphen (new) and underscore (legacy) input names
+function getInputCompat(name: string, options?: core.InputOptions): string {
+  const value = core.getInput(name, options);
+  if (value) return value;
+  const underscoreName = name.replace(/-/g, "_");
+  return core.getInput(underscoreName, options);
+}
+
+function getBooleanInputCompat(name: string, options?: core.InputOptions): boolean {
+  const value = core.getInput(name, options);
+  if (value) return core.getBooleanInput(name, options);
+  const underscoreName = name.replace(/-/g, "_");
+  return core.getBooleanInput(underscoreName, options);
+}
+
 async function run(): Promise<void> {
-  let runnerPath: string = core.getInput("runner_path", { trimWhitespace: true });
-  const sessionToken: string = core.getInput("session_token", { trimWhitespace: true });
-  const runnerBaseUrl: string = core.getInput("runner_base_url", { trimWhitespace: true });
+  let runnerPath: string = getInputCompat("runner-path", { trimWhitespace: true });
+  const sessionToken: string = getInputCompat("session-token", { trimWhitespace: true });
+  const runnerBaseUrl: string = getInputCompat("runner-base-url", { trimWhitespace: true });
   const inputs: string = assertValidString(core.getInput("inputs"));
   const matrix: string = assertValidString(core.getInput("matrix"));
   const secrets: string = assertValidString(core.getInput("secrets"));
   const needs: string = assertValidString(core.getInput("needs"));
-  const createDebugSession: boolean = core.getBooleanInput("create_debug_session", { trimWhitespace: true });
+  const createDebugSession: boolean = getBooleanInputCompat("create-debug-session", { trimWhitespace: true });
 
-  const githubToken = core.getInput("github_token", { trimWhitespace: true });
+  const githubToken = getInputCompat("github-token", { trimWhitespace: true });
   if (!githubToken) throw new Error(`No GitHub token found`);
-  
+
   const GRAPH_FILE_DIR = ".github/workflows/graphs";
-  let graphFile = path.join(GRAPH_FILE_DIR, core.getInput("graph_file", { required: true }));
+  let graphFile = path.join(GRAPH_FILE_DIR, getInputCompat("graph-file", { required: true }));
   if (os.platform() === "win32") graphFile = graphFile.replace(/\\/g, "/");
 
   const sha = process.env.GITHUB_SHA;

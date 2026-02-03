@@ -7,11 +7,11 @@ branding:
   color: 'green'
 
 inputs:
-  graph_file:
+  graph-file:
     description: 'The path to the .yaml graph file (relative to .github/workflows/graphs).'
     required: true
 
-  github_token:
+  github-token:
     description: 'The token for GitHub API authentication.'
     default: ${{ github.token }}
     required: false
@@ -36,20 +36,20 @@ inputs:
     required: false
     default: '{}'
 
-  create_debug_session:
+  create-debug-session:
     description: 'If "true", initiates a remote debugging session.'
     required: false
     default: 'false'
 
-  session_token:
+  session-token:
     description: 'Pre-existing session token for remote debugging.'
     required: false
 
-  runner_base_url:
+  runner-base-url:
     description: 'Custom URL to download the graph runner binary.'
     required: false
 
-  runner_path:
+  runner-path:
     description: 'Path to a custom graph runner binary.'
     required: false
 
