@@ -125,7 +125,8 @@ async function executeRunner(
     INPUT_SECRETS: secrets,
     INPUT_MATRIX: matrix,
     INPUT_NEEDS: needs,
-    INPUT_TOKEN: githubToken,
+    INPUT_TOKEN: githubToken, // deprecated
+    INPUT_GITHUB_TOKEN: githubToken,
     ACT_CREATE_DEBUG_SESSION: createDebugSession ? "true" : undefined,
   };
 
