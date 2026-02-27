@@ -36031,7 +36031,7 @@ function executeRunner(githubToken, runnerPath, graphFile, sessionToken, inputs,
                 throw err;
             }
         }
-        const customEnv = Object.assign(Object.assign({}, process.env), { ACT_GRAPH_FILE: graphFile, ACT_SESSION_TOKEN: sessionToken, INPUT_INPUTS: inputs, INPUT_SECRETS: secrets, INPUT_MATRIX: matrix, INPUT_NEEDS: needs, INPUT_TOKEN: githubToken, ACT_CREATE_DEBUG_SESSION: createDebugSession ? "true" : undefined });
+        const customEnv = Object.assign(Object.assign({}, process.env), { ACT_GRAPH_FILE: graphFile, ACT_SESSION_TOKEN: sessionToken, INPUT_INPUTS: inputs, INPUT_SECRETS: secrets, INPUT_MATRIX: matrix, INPUT_NEEDS: needs, INPUT_TOKEN: githubToken, INPUT_GITHUB_TOKEN: githubToken, ACT_CREATE_DEBUG_SESSION: createDebugSession ? "true" : undefined });
         core.info(`🚀 Executing runner: ${runnerPath}`);
         try {
             if (createDebugSession) {
@@ -38141,7 +38141,7 @@ module.exports = parseParams
 /***/ ((module) => {
 
 "use strict";
-module.exports = /*#__PURE__*/JSON.parse('{"name":"action","version":"0.14.6","description":"","main":"dist/index.js","scripts":{"build":"tsc && ncc build src/main.ts -o dist","test":"echo \\"Error: no test specified\\" && exit 1","generate-checksums":"ts-node src/generate-checksums.ts","ts-node":"ts-node","lint":"eslint src"},"keywords":["github","actions","workflows","node","graph"],"repository":{"type":"git","url":"git+https://github.com/actionforge/action.git"},"author":"Actionforge","license":"unknown","bugs":{"url":"https://github.com/actionforge/action/issues"},"homepage":"https://github.com/actionforge/action#readme","dependencies":{"@actions/core":"^2.0.1","@actions/github":"^6.0.1","@actions/tool-cache":"^2.0.2","@octokit/action":"^8.0.4","@types/adm-zip":"^0.5.7","@types/tar":"^6.1.13","adm-zip":"^0.5.16","axios":"^1.13.2","got":"^14.6.6","tar":"^7.5.2","ts-node":"^10.9.2"},"devDependencies":{"@eslint/js":"^9.39.2","@types/got":"^9.6.12","@types/node":"^25.0.3","@vercel/ncc":"^0.38.4","eslint":"^9.39.2","typescript":"^5.9.3","typescript-eslint":"^8.52.0"}}');
+module.exports = /*#__PURE__*/JSON.parse('{"name":"action","version":"0.15.4","description":"","main":"dist/index.js","scripts":{"build":"tsc && ncc build src/main.ts -o dist","test":"echo \\"Error: no test specified\\" && exit 1","generate-checksums":"ts-node src/generate-checksums.ts","ts-node":"ts-node","lint":"eslint src"},"keywords":["github","actions","workflows","node","graph"],"repository":{"type":"git","url":"git+https://github.com/actionforge/action.git"},"author":"Actionforge","license":"unknown","bugs":{"url":"https://github.com/actionforge/action/issues"},"homepage":"https://github.com/actionforge/action#readme","dependencies":{"@actions/core":"^2.0.1","@actions/github":"^6.0.1","@actions/tool-cache":"^2.0.2","@octokit/action":"^8.0.4","@types/adm-zip":"^0.5.7","@types/tar":"^6.1.13","adm-zip":"^0.5.16","axios":"^1.13.2","got":"^14.6.6","tar":"^7.5.2","ts-node":"^10.9.2"},"devDependencies":{"@eslint/js":"^9.39.2","@types/got":"^9.6.12","@types/node":"^25.0.3","@vercel/ncc":"^0.38.4","eslint":"^9.39.2","typescript":"^5.9.3","typescript-eslint":"^8.52.0"}}');
 
 /***/ }),
 
@@ -38149,7 +38149,7 @@ module.exports = /*#__PURE__*/JSON.parse('{"name":"action","version":"0.14.6","d
 /***/ ((module) => {
 
 "use strict";
-module.exports = /*#__PURE__*/JSON.parse('{"name":"action","version":"0.14.6","binaries":{"linux-x64":"c562b86c64b89e64d2b6bb8fc7f6e3c4a5932603f58cf2e18b2333e00b577638","linux-arm64":"5d181ff30a56ca307a720ef4cbda70457688c5ac611846671d3207733bdf0b9c","darwin-x64":"5e13090d89882908c0e9ddf0f03b5297ebf08c6d0a7d8d7e930f66fa86f3113f","darwin-arm64":"275366bccd0736299254b380d697a318129179702d9a80ea7494ca7b99eac204","win32-x64":"82a7f3e3163d88fd6d395bc027490e8d5c0051f5afbc0cc211a4ad4cbc04731e","win32-arm64":"aa8a580533015453a6870cca11a72d78dda3d6787ff62146b3c053c54b1341cf"}}');
+module.exports = /*#__PURE__*/JSON.parse('{"name":"action","version":"0.15.4","binaries":{"linux-x64":"cb68686f11df844975d149f941c44b105b1675decfadeb8e110b70057b57ac54","linux-arm64":"cfafa2a98f3e9550028021aae6ca853dca1606928562ee39586105c19ea5aa12","darwin-x64":"9ce3c760423b264e2c93945801d03e0e168aab1c26ea7bbb1bb598436341ffcb","darwin-arm64":"3b091840459e7ff6da862f38e187a21f5f2063df3ca2045899a71352232a40be","win32-x64":"f1b5de7b7f117bcede29194513d5eaae5ff99f0337529bfd691fd9b555f8c12f","win32-arm64":"50d3c46f1757ed98aa5773a1651c1368dc2e80348df5a0744906b396c31b287b"}}');
 
 /***/ })
 
