@@ -34,7 +34,7 @@
     "@octokit/action": "^8.0.4",
     "@types/adm-zip": "^0.5.7",
     "@types/tar": "^6.1.13",
-    "adm-zip": "^0.5.16",
+    "adm-zip": "^0.6.0",
     "axios": "^1.13.2",
     "got": "^14.6.6",
     "tar": "^7.5.2",
